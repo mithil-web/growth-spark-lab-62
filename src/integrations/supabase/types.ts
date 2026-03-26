@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      workshop_sessions: {
+        Row: {
+          created_at: string | null
+          current_step: number | null
+          gtm_data: Json | null
+          icp_data: Json | null
+          id: string
+          onboarding_data: Json | null
+          outreach_data: Json | null
+          profile_data: Json | null
+          session_id: string
+          updated_at: string | null
+          user_email: string | null
+          user_name: string | null
+          value_prop_data: Json | null
+          website_data: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_step?: number | null
+          gtm_data?: Json | null
+          icp_data?: Json | null
+          id?: string
+          onboarding_data?: Json | null
+          outreach_data?: Json | null
+          profile_data?: Json | null
+          session_id: string
+          updated_at?: string | null
+          user_email?: string | null
+          user_name?: string | null
+          value_prop_data?: Json | null
+          website_data?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          current_step?: number | null
+          gtm_data?: Json | null
+          icp_data?: Json | null
+          id?: string
+          onboarding_data?: Json | null
+          outreach_data?: Json | null
+          profile_data?: Json | null
+          session_id?: string
+          updated_at?: string | null
+          user_email?: string | null
+          user_name?: string | null
+          value_prop_data?: Json | null
+          website_data?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
