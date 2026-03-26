@@ -18,6 +18,7 @@ export function Step6GTM({ data, icpData, valuePropData, onboardingData, onSave,
   const [result, setResult] = useState<any>(data?.result || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeModule, setActiveModule] = useState(0);
   const { toast } = useToast();
 
   const offer = icpData?.offer || "";
@@ -31,11 +32,11 @@ export function Step6GTM({ data, icpData, valuePropData, onboardingData, onSave,
     setResult(null);
 
     const icpDetail = icps.map((icp: any, i: number) =>
-      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).join(", ")}. Goals: ${icp.goalsDesires || ""}`
+      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).join(", ")}. Goals: ${Array.isArray(icp.goalsDesires) ? icp.goalsDesires.join(", ") : (icp.goalsDesires || "")}`
     ).join("\n");
 
     const vpDetail = vps.map((vp: any, i: number) =>
-      `ICP ${i + 1}: ${vp.icpName}. Method: ${vp.yourMethod}. Angle: ${vp.coreAngle}`
+      `ICP ${i + 1}: ${vp.icpName || vp.corePromise}. Method: ${vp.corePromise || vp.yourMethod}`
     ).join("\n");
 
     const prompt = `You are an expert GTM Strategist. Generate a HIGHLY DETAILED, ACTIONABLE Go-To-Market strategy.
@@ -48,49 +49,20 @@ ${icpDetail}
 - Value Props:
 ${vpDetail}
 
-Write in PLAIN ENGLISH using SHORT SENTENCES. Use a scannable format.
+Return a JSON object with these 4 sections:
 
-The strategy must cover:
+1. "channels": Array of objects for primary channels. Each: { "name": string, "effort": "Low"|"Medium"|"High", "roi": "Low"|"Medium"|"High", "useCase": string, "startHere": boolean (true for top 1-2), "tips": [3 strings] }
 
-SECTION 1 — OUTREACH STRATEGY:
-For each ICP (label them "ICP 1", "ICP 2", "ICP 3"):
-- Recommended channels
-- Hook / angle for that ICP
-- Channel Tips: Step-by-step tips on HOW to use each channel
-- IMPORTANT: Use "LinkedIn Connection Request", "LinkedIn DM", "Cold Email". Do NOT say "LinkedIn message".
+2. "timeline": Array of 3 objects for execution phases. Each: { "phase": string (e.g. "Week 1-2"), "title": string, "tasks": [array of strings] }
 
-SECTION 2 — PARTNER OUTREACH:
-- Ideal partners for each ICP
-- Partnership models
-- Pitch message template
-- Value exchange logic
+3. "partners": { "types": [{ "type": string, "angle": string, "offer": string, "snippet": string }] }
 
-SECTION 3 — EVENT IDEAS:
-- 5 event topics tailored to the ICPs (online and offline)
+4. "leadMagnets": [{ "name": string, "type": "Audit"|"Report"|"Workshop", "targetICP": string, "description": string, "format": string }]
 
-SECTION 4 — LEAD MAGNETS:
-Generate EXACTLY 5 lead magnets. Each must be:
-- Interactive or results-oriented (a "mini product", NOT a PDF guide or ebook)
-- Solvable in under 15 minutes
-- Delivering a tangible, specific output
-
-For EACH lead magnet provide:
-- name (clear, outcome-based title)
-- targetICP (state "For ICP 1 — [Name]", "For ICP 2 — [Name]", or "For ICP 3 — [Name]")
-- whatItDoes (1 line)
-- userInput (what they enter)
-- output (what they get back)
-- whyValuable (tied to a specific pain point)
-- format (Calculator, Diagnostic Tool, Decision Tool, Generator, or Analyzer)
-- cta (clear business next step)
-
-Return ONLY a valid JSON object (no markdown, no code blocks):
-{
-  "outreachStrategy": [{ "icp": string, "channels": [string], "angles": [string], "hooks": [string], "channelTips": [string] }],
-  "partnerGrowth": { "idealPartners": [string], "models": [string], "pitch": string, "logic": string },
-  "eventGrowth": { "types": [string], "ideas": [string] },
-  "leadMagnets": [{ "name": string, "targetICP": string, "whatItDoes": string, "userInput": string, "output": string, "whyValuable": string, "format": string, "cta": string }]
-}`;
+Rules:
+- Use "LinkedIn Connection Request", "LinkedIn DM", "Cold Email" terminology.
+- Short sentences. Scannable. No jargon.
+- Return ONLY valid JSON (no markdown, no code blocks).`;
 
     try {
       const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60000));
@@ -114,13 +86,15 @@ Return ONLY a valid JSON object (no markdown, no code blocks):
     }
   };
 
+  const modules = ["Channels", "Timeline", "Partners", "Lead Magnets"];
+
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-1">Your Go-To-Market Strategy</h2>
-      <p className="text-muted-foreground mb-6">A complete, actionable GTM plan</p>
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-1">Your <span className="accent-text">GTM Strategy</span></h2>
+      <p className="text-muted-foreground mb-8 text-sm">A complete, actionable go-to-market plan</p>
 
       {!loading && !result && (
-        <Button onClick={generate} className="gradient-bg hover:opacity-90 w-full h-11 font-semibold">
+        <Button onClick={generate} className="accent-bg hover:opacity-90 w-full h-11 font-semibold">
           Generate GTM Strategy
         </Button>
       )}
@@ -129,89 +103,114 @@ Return ONLY a valid JSON object (no markdown, no code blocks):
       {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
       {result && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          {/* Outreach Strategy */}
-          {result.outreachStrategy?.map((os: any, i: number) => (
-            <div key={i} className="glass-card p-6">
-              <h3 className="text-lg font-bold gradient-text mb-3">ICP {i + 1} — Outreach Strategy</h3>
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-sm font-semibold">📡 Channels</h4>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {os.channels?.map((c: string, j: number) => (
-                      <span key={j} className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">{c}</span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold">🎯 Angles</h4>
-                  <ul className="space-y-1 mt-1">{os.angles?.map((a: string, j: number) => <li key={j} className="text-sm text-muted-foreground">• {a}</li>)}</ul>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold">🪝 Hooks</h4>
-                  <ul className="space-y-1 mt-1">{os.hooks?.map((h: string, j: number) => <li key={j} className="text-sm text-muted-foreground">• {h}</li>)}</ul>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold">💡 Channel Tips</h4>
-                  <ul className="space-y-1 mt-1">{os.channelTips?.map((t: string, j: number) => <li key={j} className="text-sm text-muted-foreground">• {t}</li>)}</ul>
-                </div>
-              </div>
-            </div>
-          ))}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          {/* Module Tabs */}
+          <div className="flex gap-1 mb-6 overflow-x-auto">
+            {modules.map((m, idx) => (
+              <button
+                key={m}
+                onClick={() => setActiveModule(idx)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                  activeModule === idx ? "accent-bg" : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
 
-          {/* Partners */}
-          {result.partnerGrowth && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-bold gradient-text mb-3">🤝 Partner Outreach</h3>
-              <div className="space-y-3">
-                <div><h4 className="text-sm font-semibold">Ideal Partners</h4><ul className="mt-1">{result.partnerGrowth.idealPartners?.map((p: string, i: number) => <li key={i} className="text-sm text-muted-foreground">• {p}</li>)}</ul></div>
-                <div><h4 className="text-sm font-semibold">Models</h4><ul className="mt-1">{result.partnerGrowth.models?.map((m: string, i: number) => <li key={i} className="text-sm text-muted-foreground">• {m}</li>)}</ul></div>
-                <div><h4 className="text-sm font-semibold">Pitch Template</h4><p className="text-sm text-muted-foreground mt-1">{result.partnerGrowth.pitch}</p></div>
-                <div><h4 className="text-sm font-semibold">Value Exchange</h4><p className="text-sm text-muted-foreground mt-1">{result.partnerGrowth.logic}</p></div>
-              </div>
+          {/* Channels */}
+          {activeModule === 0 && result.channels && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {result.channels.map((ch: any, i: number) => (
+                <div key={i} className={`glass-card p-5 ${ch.startHere ? "border-primary" : ""}`}>
+                  {ch.startHere && (
+                    <span className="text-[10px] font-bold accent-bg px-2 py-0.5 rounded mb-2 inline-block">START HERE</span>
+                  )}
+                  <h4 className="font-semibold text-sm mb-2">{ch.name}</h4>
+                  <div className="flex gap-3 mb-3">
+                    <span className="text-xs text-muted-foreground">Effort: <span className="text-foreground">{ch.effort}</span></span>
+                    <span className="text-xs text-muted-foreground">ROI: <span className="text-foreground">{ch.roi}</span></span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">{ch.useCase}</p>
+                  {ch.tips && (
+                    <ul className="space-y-1">
+                      {ch.tips.map((t: string, j: number) => (
+                        <li key={j} className="text-xs text-muted-foreground">→ {t}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Events */}
-          {result.eventGrowth && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-bold gradient-text mb-3">🎪 Event Ideas</h3>
-              <ul className="space-y-2">
-                {(result.eventGrowth.ideas || result.eventGrowth.types || []).map((e: string, i: number) => (
-                  <li key={i} className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">• {e}</li>
-                ))}
-              </ul>
+          {/* Timeline */}
+          {activeModule === 1 && result.timeline && (
+            <div className="space-y-4">
+              {result.timeline.map((phase: any, i: number) => (
+                <div key={i} className="glass-card p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold accent-bg">{i + 1}</span>
+                    <div>
+                      <span className="text-xs text-primary font-medium">{phase.phase}</span>
+                      <h4 className="font-semibold text-sm">{phase.title}</h4>
+                    </div>
+                  </div>
+                  <ul className="space-y-1.5 ml-11">
+                    {phase.tasks?.map((task: string, j: number) => (
+                      <li key={j} className="text-sm text-muted-foreground flex gap-2">
+                        <span className="text-muted-foreground/50">•</span>{task}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Partners */}
+          {activeModule === 2 && result.partners?.types && (
+            <div className="space-y-3">
+              {result.partners.types.map((p: any, i: number) => (
+                <div key={i} className="glass-card p-5">
+                  <h4 className="font-semibold text-sm mb-1">{p.type}</h4>
+                  <div className="space-y-2 mt-3">
+                    <div><span className="text-xs text-muted-foreground">Angle:</span> <span className="text-sm">{p.angle}</span></div>
+                    <div><span className="text-xs text-muted-foreground">Offer:</span> <span className="text-sm">{p.offer}</span></div>
+                    {p.snippet && (
+                      <div className="bg-secondary p-3 rounded-md mt-2">
+                        <span className="text-xs text-muted-foreground">Copy snippet:</span>
+                        <p className="text-sm mt-1 italic">"{p.snippet}"</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
           {/* Lead Magnets */}
-          {result.leadMagnets && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-bold gradient-text mb-3">🧲 Lead Magnets</h3>
-              <div className="space-y-4">
-                {result.leadMagnets.map((lm: any, i: number) => (
-                  <div key={i} className="bg-muted/30 p-4 rounded-lg">
-                    <h4 className="font-semibold text-sm">{lm.name}</h4>
-                    <span className="text-xs text-primary">{lm.targetICP}</span>
-                    <p className="text-xs text-muted-foreground mt-1"><strong>Format:</strong> {lm.format}</p>
-                    <p className="text-xs text-muted-foreground"><strong>What it does:</strong> {lm.whatItDoes}</p>
-                    <p className="text-xs text-muted-foreground"><strong>User inputs:</strong> {lm.userInput}</p>
-                    <p className="text-xs text-muted-foreground"><strong>Output:</strong> {lm.output}</p>
-                    <p className="text-xs text-muted-foreground"><strong>Why valuable:</strong> {lm.whyValuable}</p>
-                    <p className="text-xs text-primary mt-1"><strong>CTA:</strong> {lm.cta}</p>
-                  </div>
-                ))}
-              </div>
+          {activeModule === 3 && result.leadMagnets && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {result.leadMagnets.map((lm: any, i: number) => (
+                <div key={i} className="glass-card p-5">
+                  <span className="text-[10px] font-medium text-primary uppercase">{lm.type || lm.format}</span>
+                  <h4 className="font-semibold text-sm mt-1 mb-2">{lm.name}</h4>
+                  <p className="text-xs text-muted-foreground mb-2">{lm.description || lm.whatItDoes}</p>
+                  <span className="text-xs text-muted-foreground">{lm.targetICP}</span>
+                </div>
+              ))}
             </div>
           )}
 
-          <Button onClick={generate} variant="ghost" className="w-full">Regenerate</Button>
+          <Button onClick={generate} variant="ghost" className="w-full mt-6 text-muted-foreground">Regenerate</Button>
         </motion.div>
       )}
 
       {result && (
         <div className="mt-8 flex justify-end">
-          <Button onClick={() => { onSave({ result }); onNext(); }} className="gradient-bg hover:opacity-90 h-12 px-8 font-semibold">
+          <Button onClick={() => { onSave({ result }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step →
           </Button>
         </div>

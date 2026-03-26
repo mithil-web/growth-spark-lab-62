@@ -1,13 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { callGemini } from "@/lib/workshop-store";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { Copy } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 
 const ANGLES = ["Authority", "ROI", "Pain-led", "Contrarian", "Curiosity", "Offer-led"];
-const CHANNELS = ["LinkedIn Only", "Cold Email Only", "Both"];
 
 interface Step7Props {
   data: any;
@@ -21,12 +25,11 @@ interface Step7Props {
 
 export function Step7Outreach({ data, icpData, valuePropData, profileData, onboardingData, onSave, onNext }: Step7Props) {
   const [angle, setAngle] = useState(data?.angle || "Authority");
-  const [channel, setChannel] = useState(data?.channel || "Both");
   const [result, setResult] = useState<any>(data?.result || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState(0);
   const { toast } = useToast();
-  const abortRef = useRef<AbortController | null>(null);
   const generationIdRef = useRef(0);
 
   const offer = icpData?.offer || "";
@@ -36,70 +39,59 @@ export function Step7Outreach({ data, icpData, valuePropData, profileData, onboa
   const industry = onboardingData?.industry || "";
 
   const generate = useCallback(async () => {
-    // Increment generation ID to invalidate previous calls
     const currentGenId = ++generationIdRef.current;
-
     setError("");
     setLoading(true);
-    setResult(null); // Reset state before new generation
+    setResult(null);
 
-    const icpSummary = icps.slice(0, 2).map((icp: any, i: number) =>
-      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).slice(0, 3).join(", ")}`
+    const icpSummary = icps.map((icp: any, i: number) =>
+      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).slice(0, 4).join(", ")}. Psychology: ${icp.psychology || ""}. Where: ${Array.isArray(icp.whereTheyHangOut) ? icp.whereTheyHangOut.join(", ") : ""}`
     ).join("\n");
 
-    const topVP = vps[0] ? `${vps[0].desiredOutcome} — ${vps[0].yourMethod}` : offer;
+    const topVP = vps[0] ? `${vps[0].corePromise || vps[0].desiredOutcome}` : offer;
 
-    const prompt = `You are a world-class B2B Outreach Strategist. Generate a complete outreach package.
+    const prompt = `You are a world-class B2B Outreach Strategist. Generate a STRATEGIC OUTREACH PLAYBOOK (not scripts or templates).
 
 - Client: ${userName}
 - Offer: ${offer}
 - Value Prop: ${topVP}
-- Target Industry: ${industry}
-- ICP Summary:
-${icpSummary}
+- Industry: ${industry}
 - Selected Angle: ${angle}
-- Selected Channel: ${channel}
+- ICPs:
+${icpSummary}
 
-OUTPUT:
-A. LinkedIn Sequence (5 touches):
-- Connection Request: Under 300 characters. Human, no pitch.
-- Follow-up 1 (Day 3): Value-add, no ask
-- Follow-up 2 (Day 7): Soft relevance nudge
-- Follow-up 3 (Day 14): Gentle CTA
-- Follow-up 4 (Day 21): Breakup or re-engage
+For EACH of the 3 ICPs, generate a strategic playbook with these sections:
 
-B. Cold Email Sequence (3 emails):
-- Email 1: Subject line + body (problem-aware, 4 to 6 lines)
-- Email 2: Subject line + body (case study or proof, 3 to 5 lines)
-- Email 3: Subject line + body (direct ask, 3 to 4 lines)
+1. "icpContext": { "who": string, "mindset": string, "careAbout": [3 strings], "ignore": [3 strings] }
 
-Rules:
-- No em dashes. Use periods or commas instead.
-- No corporate jargon.
-- All messages must lean into the selected angle: ${angle}
-- Tone: confident but human
+2. "strategicApproach": { "bestAngle": string, "positioningStyle": string (peer/expert/challenger/insider), "whatNotToDo": [3 strings] }
 
-Return ONLY a valid JSON object (no markdown, no code blocks):
+3. "touchpointStrategy": {
+  "compliment": { "when": string, "type": string, "avoid": string },
+  "voiceNote": { "stage": string, "whyItWorks": string, "tone": string },
+  "loom": { "trigger": string, "content": string, "personalization": string },
+  "caseStudy": { "trustStage": string, "typeOfProof": string, "format": string },
+  "leadMagnet": { "timing": string, "type": string, "conversionMoment": string },
+  "curiosity": { "hooks": [3 strings], "infoGaps": [2 strings], "psychTriggers": [2 strings] }
+}
+
+4. "followUpSystem": { "totalTouches": number (5-8), "delayDays": [array of numbers], "escalationLogic": string, "toneEvolution": string }
+
+5. "messageDistribution": [array of objects with "touch" (number) and "type" (string, e.g. "Curiosity", "Compliment", "Insight", "Case study", "CTA")]
+
+6. "whatToAvoid": [4-5 specific mistakes for this ICP]
+
+Return ONLY valid JSON (no markdown):
 {
-  "strategySummary": string,
-  "linkedIn": {
-    "connectionRequest": string,
-    "followUps": [4 strings for Day 3, Day 7, Day 14, Day 21]
-  },
-  "email": {
-    "emails": [
-      { "subject": string, "body": string },
-      { "subject": string, "body": string },
-      { "subject": string, "body": string }
-    ]
-  }
+  "playbooks": [
+    { "icpName": string, "icpContext": ..., "strategicApproach": ..., "touchpointStrategy": ..., "followUpSystem": ..., "messageDistribution": [...], "whatToAvoid": [...] },
+    ... (3 total)
+  ]
 }`;
 
     try {
       const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60000));
       const raw = await Promise.race([callGemini(prompt), timeoutP]) as string;
-
-      // Check if this generation is still current
       if (currentGenId !== generationIdRef.current) return;
 
       let parsed;
@@ -112,7 +104,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks):
         return;
       }
       setResult(parsed);
-      onSave({ angle, channel, result: parsed });
+      onSave({ angle, result: parsed });
       toast({ title: "✓ Saved", duration: 3000 });
     } catch (e: any) {
       if (currentGenId !== generationIdRef.current) return;
@@ -120,106 +112,230 @@ Return ONLY a valid JSON object (no markdown, no code blocks):
     } finally {
       if (currentGenId === generationIdRef.current) setLoading(false);
     }
-  }, [angle, channel, offer, icps, vps, userName, industry, onSave, toast]);
+  }, [angle, offer, icps, vps, userName, industry, onSave, toast]);
 
-  const copyText = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", duration: 2000 });
-  };
-
-  const linkedInLabels = ["Connection Request", "Follow-up 1 (Day 3)", "Follow-up 2 (Day 7)", "Follow-up 3 (Day 14)", "Follow-up 4 (Day 21)"];
+  const playbooks = result?.playbooks || [];
 
   return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="max-w-3xl mx-auto">
-      <h2 className="text-2xl font-bold mb-1">Your Personalised Outreach Sequences</h2>
-      <p className="text-muted-foreground mb-6">Tailored messages for your ICPs</p>
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-1">Strategic <span className="accent-text">Outreach</span> Playbook</h2>
+      <p className="text-muted-foreground mb-8 text-sm">Tactical, psychological outreach strategy per ICP</p>
 
-      <div className="glass-card p-6 space-y-4 mb-6">
-        <div>
-          <label className="text-sm font-medium">Choose your outreach angle</label>
-          <select value={angle} onChange={e => setAngle(e.target.value)} className="w-full mt-1 h-10 px-3 rounded-md bg-muted/50 border border-border/50 text-foreground text-sm">
-            {ANGLES.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-sm font-medium">Choose your channel</label>
-          <select value={channel} onChange={e => setChannel(e.target.value)} className="w-full mt-1 h-10 px-3 rounded-md bg-muted/50 border border-border/50 text-foreground text-sm">
-            {CHANNELS.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+      <div className="glass-card p-5 mb-6">
+        <label className="text-sm text-muted-foreground">Outreach Angle</label>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {ANGLES.map(a => (
+            <button
+              key={a}
+              onClick={() => setAngle(a)}
+              className={`text-sm px-4 py-2 rounded-md border transition-all ${
+                angle === a ? "tag-selected border-primary" : "bg-secondary border-border text-muted-foreground hover:border-muted-foreground"
+              }`}
+            >
+              {a}
+            </button>
+          ))}
         </div>
 
-        <Button onClick={generate} className="gradient-bg hover:opacity-90 w-full h-11 font-semibold">
-          {result ? "Regenerate Sequences" : "Generate Outreach Sequences"}
+        <Button onClick={generate} className="accent-bg hover:opacity-90 w-full h-11 font-semibold mt-4">
+          {result ? "Regenerate Playbook" : "Generate Outreach Playbook"}
         </Button>
       </div>
 
-      {loading && <LoadingSpinner text="Crafting your outreach sequences..." />}
+      {loading && <LoadingSpinner text="Building your outreach playbook..." />}
       {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
-      {result && !loading && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          {/* Strategy Summary */}
-          {result.strategySummary && (
-            <div className="glass-card p-6 border-l-4 border-primary">
-              <p className="text-sm italic text-muted-foreground">"{result.strategySummary}"</p>
-            </div>
-          )}
+      {playbooks.length > 0 && !loading && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          {/* ICP Tabs */}
+          <div className="flex gap-1 mb-6">
+            {playbooks.map((pb: any, idx: number) => (
+              <button
+                key={idx}
+                onClick={() => setActiveTab(idx)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === idx ? "accent-bg" : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                ICP {idx + 1}
+              </button>
+            ))}
+          </div>
 
-          {/* LinkedIn */}
-          {result.linkedIn && (channel === "LinkedIn Only" || channel === "Both") && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-bold gradient-text mb-4">💼 LinkedIn Sequence</h3>
-              <div className="space-y-3">
-                <div className="bg-muted/30 p-4 rounded-lg">
-                  <div className="flex justify-between items-start mb-1">
-                    <h4 className="text-sm font-semibold">{linkedInLabels[0]}</h4>
-                    <Button variant="ghost" size="sm" onClick={() => copyText(result.linkedIn.connectionRequest)}>
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{result.linkedIn.connectionRequest}</p>
-                </div>
-                {result.linkedIn.followUps?.map((fu: string, i: number) => (
-                  <div key={i} className="bg-muted/30 p-4 rounded-lg">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-semibold">{linkedInLabels[i + 1]}</h4>
-                      <Button variant="ghost" size="sm" onClick={() => copyText(fu)}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-4"
+            >
+              {(() => {
+                const pb = playbooks[activeTab];
+                if (!pb) return null;
+                return (
+                  <>
+                    {/* ICP Context */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">🎯 ICP Context — {pb.icpName}</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-xs text-muted-foreground">Who they are</span>
+                          <p className="text-sm mt-0.5">{pb.icpContext?.who}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground">Mindset</span>
+                          <p className="text-sm mt-0.5">{pb.icpContext?.mindset}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground">They care about</span>
+                          <ul className="mt-1 space-y-0.5">
+                            {pb.icpContext?.careAbout?.map((c: string, i: number) => (
+                              <li key={i} className="text-sm text-emerald-400">✓ {c}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <span className="text-xs text-muted-foreground">They ignore</span>
+                          <ul className="mt-1 space-y-0.5">
+                            {pb.icpContext?.ignore?.map((c: string, i: number) => (
+                              <li key={i} className="text-sm text-destructive">✗ {c}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">{fu}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Email */}
-          {result.email && (channel === "Cold Email Only" || channel === "Both") && (
-            <div className="glass-card p-6">
-              <h3 className="text-lg font-bold gradient-text mb-4">📧 Cold Email Sequence</h3>
-              <div className="space-y-3">
-                {result.email.emails?.map((em: any, i: number) => (
-                  <div key={i} className="bg-muted/30 p-4 rounded-lg">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="text-sm font-semibold">Email {i + 1}</h4>
-                      <Button variant="ghost" size="sm" onClick={() => copyText(`Subject: ${em.subject}\n\n${em.body}`)}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
+                    {/* Strategic Approach */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">🧠 Strategic Approach</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">Best Angle</span>
+                          <p className="text-sm font-semibold accent-text mt-0.5">{pb.strategicApproach?.bestAngle}</p>
+                        </div>
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">Positioning Style</span>
+                          <p className="text-sm font-semibold mt-0.5">{pb.strategicApproach?.positioningStyle}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">What NOT to do</span>
+                        <ul className="mt-1 space-y-1">
+                          {pb.strategicApproach?.whatNotToDo?.map((w: string, i: number) => (
+                            <li key={i} className="text-sm text-destructive/80">✗ {w}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                    <p className="text-xs text-primary mb-1">Subject: {em.subject}</p>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{em.body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
+                    {/* Touchpoint Strategy */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">💬 Touchpoint Strategy</h3>
+                      <div className="space-y-3">
+                        {pb.touchpointStrategy && Object.entries(pb.touchpointStrategy).map(([key, val]: [string, any]) => {
+                          if (!val) return null;
+                          const labels: Record<string, string> = {
+                            compliment: "When to Compliment",
+                            voiceNote: "Voice Note",
+                            loom: "Loom Video",
+                            caseStudy: "Case Study",
+                            leadMagnet: "Lead Magnet",
+                            curiosity: "Building Curiosity",
+                          };
+                          return (
+                            <Collapsible key={key}>
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center justify-between bg-secondary p-3 rounded-md hover:bg-muted transition-colors">
+                                  <span className="text-sm font-medium">{labels[key] || key}</span>
+                                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="p-3 space-y-2">
+                                  {typeof val === "object" && !Array.isArray(val) && Object.entries(val).map(([k, v]: [string, any]) => (
+                                    <div key={k}>
+                                      <span className="text-xs text-muted-foreground capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
+                                      {Array.isArray(v) ? (
+                                        <ul className="mt-0.5 space-y-0.5">
+                                          {v.map((item: string, i: number) => <li key={i} className="text-sm">• {item}</li>)}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-sm">{v}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Follow-up System */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">🔁 Follow-up System</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                        <div className="bg-secondary p-3 rounded-md text-center">
+                          <span className="text-2xl font-bold accent-text">{pb.followUpSystem?.totalTouches || "—"}</span>
+                          <p className="text-xs text-muted-foreground mt-1">Total Touches</p>
+                        </div>
+                        <div className="bg-secondary p-3 rounded-md col-span-1 sm:col-span-3">
+                          <span className="text-xs text-muted-foreground">Delay (days)</span>
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            {pb.followUpSystem?.delayDays?.map((d: number, i: number) => (
+                              <span key={i} className="text-xs px-2 py-0.5 rounded tag-selected border border-primary">Day {d}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div><span className="text-xs text-muted-foreground">Escalation</span><p className="text-sm">{pb.followUpSystem?.escalationLogic}</p></div>
+                        <div><span className="text-xs text-muted-foreground">Tone Evolution</span><p className="text-sm">{pb.followUpSystem?.toneEvolution}</p></div>
+                      </div>
+                    </div>
+
+                    {/* Message Distribution */}
+                    {pb.messageDistribution && (
+                      <div className="glass-card p-5">
+                        <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">🧱 Message Distribution</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {pb.messageDistribution.map((m: any, i: number) => (
+                            <div key={i} className="bg-secondary px-3 py-2 rounded-md flex items-center gap-2">
+                              <span className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold accent-bg">{m.touch}</span>
+                              <span className="text-sm">{m.type}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* What to Avoid */}
+                    {pb.whatToAvoid && (
+                      <div className="glass-card p-5">
+                        <h3 className="text-xs font-semibold text-destructive uppercase tracking-wider mb-3">🚫 What to Avoid</h3>
+                        <ul className="space-y-1.5">
+                          {pb.whatToAvoid.map((w: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                              <span className="text-destructive shrink-0">✗</span>{w}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       )}
 
-      {result && !loading && (
+      {playbooks.length > 0 && !loading && (
         <div className="mt-8 flex justify-end">
-          <Button onClick={() => { onSave({ angle, channel, result }); onNext(); }} className="gradient-bg hover:opacity-90 h-12 px-8 font-semibold">
+          <Button onClick={() => { onSave({ angle, result }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step → Finish & Download PDF
           </Button>
         </div>
