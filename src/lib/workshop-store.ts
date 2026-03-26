@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { v4 as uuidv4 } from "crypto";
+
 
 const STORAGE_KEY = "workshop_session_id";
 const BACKUP_KEY = "workshop_backup";
