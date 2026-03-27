@@ -216,7 +216,7 @@ Rules:
               )}
 
               <div className="glass-card p-5">
-                <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-4">Ready-to-Use Copy</h4>
+                <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-4">Strategy Behind Your Content Creation</h4>
                 <div className="space-y-3">
                   <div className="bg-secondary p-3 rounded-md flex items-start justify-between">
                     <div>
