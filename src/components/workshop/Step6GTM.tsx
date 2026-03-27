@@ -33,20 +33,32 @@ export function Step6GTM({ data, icpData, valuePropData, onboardingData, profile
   const vps = valuePropData?.result || [];
   const industry = onboardingData?.industry || "";
 
-  const generate = async () => {
-    setError("");
-    setLoading(true);
-    setResult(null);
-
+  const buildPrompt = (lite = false) => {
     const icpDetail = icps.map((icp: any, i: number) =>
-      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).join(", ")}. Goals: ${Array.isArray(icp.goalsDesires) ? icp.goalsDesires.join(", ") : (icp.goalsDesires || "")}`
+      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).slice(0, lite ? 2 : undefined).join(", ")}. Goals: ${Array.isArray(icp.goalsDesires) ? icp.goalsDesires.slice(0, lite ? 2 : undefined).join(", ") : (icp.goalsDesires || "")}`
     ).join("\n");
 
     const vpDetail = vps.map((vp: any, i: number) =>
       `ICP ${i + 1}: ${vp.icpName || vp.corePromise}. Method: ${vp.corePromise || vp.yourMethod}`
     ).join("\n");
 
-    const prompt = `You are an expert GTM Strategist. Generate a HIGHLY DETAILED, ACTIONABLE Go-To-Market strategy PER ICP.
+    if (lite) {
+      return `You are a GTM Strategist. Generate a concise Go-To-Market strategy per ICP.
+
+Inputs:
+- Core Offer: ${offer}
+- Industry: ${Array.isArray(industry) ? industry.join(", ") : industry}
+- ICPs:
+${icpDetail}
+- Value Propositions:
+${vpDetail}
+
+Return a JSON object with "icpStrategies" array. Each strategy has: icpName, channels (name, effort, roi, useCase, startHere, tips), timeline (phase, title, tasks), partners (types with type, angle, offer, snippet), leadMagnets (name, type, targetICP, includes, whyItWorks, whenToUse, effort, impact, bestStart), eventLedGrowth (onlineEvents, offlineEvents, eventFunnel with preEvent/duringEvent/postEvent, conversionStrategy).
+
+Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
+    }
+
+    return `You are an expert GTM Strategist. Generate a HIGHLY DETAILED, ACTIONABLE Go-To-Market strategy PER ICP.
 
 Inputs:
 - Core Offer: ${offer}
@@ -83,27 +95,42 @@ Rules:
 - Event-Led Growth: 3 online + 3 offline event formats, 3 specific topic ideas, pre/during/post funnel, conversion strategy.
 - Do NOT use em-dashes, asterisks, or hash signs.
 - Return ONLY valid JSON (no markdown, no code blocks).`;
+  };
+
+  const generate = async (lite = false) => {
+    if (isGenerating.current) return;
+    isGenerating.current = true;
+    setError("");
+    setLoading(true);
+
+    console.log("GTM API call started", lite ? "(lite)" : "(full)");
+
+    const prompt = buildPrompt(lite);
 
     try {
-      const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60000));
+      const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 90000));
       const raw = await Promise.race([callGemini(prompt), timeoutP]) as string;
+      console.log("GTM API response received");
       let parsed;
       try {
         const match = raw.match(/\{[\s\S]*\}/);
         parsed = JSON.parse(match ? match[0] : raw);
       } catch {
-        setError("Something went wrong. Please try again.");
+        setError("parse_error");
         setLoading(false);
+        isGenerating.current = false;
         return;
       }
       parsed = sanitizeAIOutput(parsed);
       setResult(parsed);
       onSave({ result: parsed });
-      toast({ title: "✓ Saved", duration: 3000 });
+      toast({ title: "GTM Strategy generated", duration: 3000 });
     } catch (e: any) {
-      setError(e.message === "timeout" ? "This is taking too long. Please try again." : "Something went wrong. Please try again.");
+      console.error("GTM generation failed:", e);
+      setError(e.message === "timeout" ? "timeout" : "failed");
     } finally {
       setLoading(false);
+      isGenerating.current = false;
     }
   };
 
