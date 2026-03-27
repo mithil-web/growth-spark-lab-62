@@ -340,6 +340,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
                   <p key={i}>{para}</p>
                 ))}
               </div>
+              <CopyBtn text={result.aboutSection} id="about-section" label="Copy About Section" />
             </div>
           )}
 
