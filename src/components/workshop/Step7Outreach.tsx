@@ -1,8 +1,10 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { InfoTooltip } from "./InfoTooltip";
 import { callGemini } from "@/lib/workshop-store";
 import { sanitizeAIOutput } from "@/lib/sanitize";
+import { NO_JARGON_RULE } from "@/lib/prompt-rules";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, AlertTriangle, Video, Clock, ExternalLink, Wrench, ShieldAlert, X, Lightbulb } from "lucide-react";
@@ -10,20 +12,102 @@ import { ArrowLeft, AlertTriangle, Video, Clock, ExternalLink, Wrench, ShieldAle
 const ANGLES = ["Authority", "ROI", "Pain-led", "Contrarian", "Curiosity", "Offer-led"];
 const MAX_ANGLES = 2;
 
+const POSITIONING_STYLES = [
+  { name: "Peer", desc: "Talk to them as an equal. You understand their world because you have been there." },
+  { name: "Expert", desc: "Lead with knowledge and track record. Let your results open the conversation." },
+  { name: "Challenger", desc: "Point out a gap or assumption in how they currently operate. Provoke thinking." },
+  { name: "Insider", desc: "Show industry-specific knowledge that makes them feel you truly get their world." },
+];
+
 const PRACTICE_STEPS = [
-  { step: 1, action: "Connection Sent", purpose: "Start the relationship with a short personalised note", timing: "Day 1" },
-  { step: 2, action: "Connection Accepted", purpose: "They accept your request", timing: "Day 1-3" },
-  { step: 3, action: "Liked their recent post", purpose: "Warm up, get on their radar", timing: "Day 2-3" },
-  { step: 4, action: "Commented on their post", purpose: "Increase visibility, show genuine interest", timing: "Day 3-4", delay: "2-5 days before next step" },
-  { step: 5, action: "Message 1 (curiosity or insight-based, 3-4 lines max)", purpose: "Open conversation using selected angle", timing: "Day 5-7", delay: "2-5 days before next step" },
-  { step: 6, action: "Liked another post", purpose: "Maintain visibility without being pushy", timing: "Day 7-9" },
-  { step: 7, action: "Message 2 (value-add, Loom video or lead magnet)", purpose: "Deliver personalised value, break pattern", timing: "Day 10-14", delay: "2-5 days before next step" },
-  { step: 8, action: "Commented again (if no reply to Message 2)", purpose: "Stay visible one more time", timing: "Day 14-16" },
-  { step: 9, action: "Message 3 (soft CTA or graceful close)", purpose: "Final touchpoint, offer value or exit gracefully", timing: "Day 17-20" },
+  {
+    phase: "PHASE 1: BUILD AWARENESS",
+    steps: [
+      {
+        step: 1,
+        action: "Send Connection Request",
+        detail: "You can add a personalised note or try without one. If adding a note: keep it friendly, lead with a genuine compliment about their work or a specific post. Never pitch in the connection request. If they do not see value in connecting, they will not accept, and you have lost that prospect.",
+        tip: "Use their first name. Reference something specific about them, a post, a company milestone, or a recent achievement. Tools like Clay (clay.com) can pull recent activity like funding rounds, hiring sprees, or company news to help you personalise at scale.",
+        timing: "Day 1",
+      },
+      {
+        step: 2,
+        action: "Once Accepted: Like and Comment on Their Post",
+        detail: "After they accept, do NOT send a message yet. Instead, go to their profile, find a recent post, and like it, then leave a thoughtful, specific comment (not just 'Great post!').",
+        tip: "They get a notification, check who commented, see your profile, and recall your connection request. You are now in their awareness without being in their inbox.",
+        timing: "Day 2-3",
+      },
+    ],
+  },
+  {
+    phase: "PHASE 2: GET INTO THEIR DMs",
+    steps: [
+      {
+        step: 3,
+        action: "Message 1: Curiosity or Insight Based",
+        detail: "Wait 2-5 days after step 2 before sending. Highlight a problem they might be facing. Ask a genuine question about their business. Reference something specific about them (recent post, company, role). Keep it under 4 lines. No pitch. No 'I do this, can we talk?'",
+        tip: "Goal: Start a conversation, not close a deal.",
+        timing: "Day 5-7",
+        delay: "2-5 days before next step",
+      },
+      {
+        step: 4,
+        action: "Message 2: Value Add",
+        detail: "Wait 2-5 days after Message 1 if no reply. Options to try (pick one, not all): Send a Loom video (1-3 mins) showing something relevant to them. Share a relevant lead magnet that solves a real problem for them. Share a short case study relevant to their situation.",
+        tip: "They have seen you, but have not engaged. This is how you get their attention without being pushy.",
+        timing: "Day 10-14",
+        delay: "2-5 days before next step",
+      },
+      {
+        step: 5,
+        action: "Message 3: Soft CTA or Graceful Close",
+        detail: "Wait 2-5 days after Message 2. Now, and only now, subtly mention what you do. Format: 'I noticed [specific thing about their business]. We help [what you do]. I would love to understand more about what you are working on and see if there is a fit. Would a quick 20-minute call make sense?'",
+        tip: "If No Reply: Let them go gracefully. Send one final message: 'Completely understand if now is not the right time. Here is [lead magnet]. Hope it is useful.' This keeps the door open and ensures you are remembered positively.",
+        timing: "Day 17-20",
+        delay: "Final touchpoint",
+      },
+    ],
+  },
+];
+
+const SEQUENCES = [
+  {
+    name: "Clean and Simple",
+    steps: [
+      { action: "Connection Request", timing: "" },
+      { action: "Like / Comment on post", timing: "" },
+      { action: "Message 1: Curiosity", timing: "after 2-5 days" },
+      { action: "Follow-up 1: Insight or question", timing: "after 1-2 days" },
+      { action: "Follow-up 2: Value add", timing: "after 2-4 days" },
+      { action: "Follow-up 3: Soft CTA", timing: "after 3-4 days" },
+    ],
+  },
+  {
+    name: "Value First",
+    steps: [
+      { action: "Connection Request", timing: "" },
+      { action: "Like / Comment on post", timing: "" },
+      { action: "Message 1: Insight", timing: "after 2-5 days" },
+      { action: "Follow-up 1: Loom video", timing: "after 1-2 days" },
+      { action: "Follow-up 2: Lead magnet", timing: "after 2-4 days" },
+      { action: "Follow-up 3: Soft CTA", timing: "after 3-4 days" },
+    ],
+  },
+  {
+    name: "Full Personalised",
+    steps: [
+      { action: "Like / Comment BEFORE connecting", timing: "" },
+      { action: "Connection Request with personalised note", timing: "" },
+      { action: "Message 1: Observation or compliment", timing: "after 2-5 days" },
+      { action: "Follow-up 1: Loom or voice note", timing: "after 1-2 days" },
+      { action: "Follow-up 2: Lead magnet", timing: "after 2-4 days" },
+      { action: "Follow-up 3: Graceful close with resource", timing: "after 3-4 days" },
+    ],
+  },
 ];
 
 const TOOLS = [
-  { name: "CLAY", url: "https://clay.com", desc: "Pulls live data about prospects: recent posts, job changes, company news. Use to personalise your first message.", example: "\"Saw you just expanded your team, here's something useful for your outreach right now.\"" },
+  { name: "CLAY", url: "https://clay.com", desc: "Pulls live data about prospects: recent posts, job changes, company news. Use to personalise your first message.", example: "\"Saw you just expanded your team, here is something useful for your outreach right now.\"" },
   { name: "CALENDLY", url: "https://calendly.com/founder-myntmore/30min", desc: "Always include your booking link in any CTA message. Send a direct booking link. Never ask them to reply with their availability, it creates friction.", example: null },
   { name: "APOLLO", url: "https://apollo.io", desc: "Use to find work emails when LinkedIn gets no response. Free tier available. Search by name + company name.", example: null },
 ];
@@ -31,33 +115,12 @@ const TOOLS = [
 const MESSAGE_RULES = [
   "Every message must be under 5 lines",
   "No corporate jargon",
-  "No \"I hope this finds you well\"",
+  "No 'I hope this finds you well'",
   "No long service explanations",
   "Always use their name and company name",
   "End with a question or a clear next step",
   "Do not use all touchpoints with every prospect, test one sequence at a time",
   "If someone says no, let them go",
-];
-
-const SEQUENCES = [
-  { name: "Curiosity-led", steps: [
-    { touch: 1, type: "Connection", intent: "Pattern-interrupt curiosity" },
-    { touch: 2, type: "Follow-up", intent: "Curiosity hook" },
-    { touch: 3, type: "Follow-up", intent: "Insight or observation" },
-    { touch: 4, type: "Follow-up", intent: "Soft CTA" },
-  ]},
-  { name: "Insight-led", steps: [
-    { touch: 1, type: "Connection", intent: "Relevant observation" },
-    { touch: 2, type: "Follow-up", intent: "Industry insight" },
-    { touch: 3, type: "Follow-up", intent: "Case study proof" },
-    { touch: 4, type: "Follow-up", intent: "Direct CTA" },
-  ]},
-  { name: "Multi-format", steps: [
-    { touch: 1, type: "Connection", intent: "Personalized observation" },
-    { touch: 2, type: "Follow-up", intent: "Value-add content" },
-    { touch: 3, type: "Loom / Voice", intent: "Personalized walkthrough" },
-    { touch: 4, type: "Follow-up", intent: "Lead magnet offer" },
-  ]},
 ];
 
 interface Step7Props {
@@ -108,6 +171,8 @@ export function Step7Outreach({ data, icpData, valuePropData, profileData, onboa
 
     const prompt = `You are a world-class B2B Outreach Strategist. Generate a STRATEGIC OUTREACH PLAYBOOK (not scripts or templates).
 
+${NO_JARGON_RULE}
+
 - Client: ${userName}
 - Offer: ${offer}
 - Value Proposition: ${topVP}
@@ -116,31 +181,24 @@ export function Step7Outreach({ data, icpData, valuePropData, profileData, onboa
 - ICPs:
 ${icpSummary}
 
-For EACH of the 3 ICPs, generate a strategic playbook with these sections:
+For EACH of the 3 target customer types, generate a strategic playbook with these sections:
 
 1. "icpContext": { "who": string, "mindset": string, "careAbout": [3 strings], "ignore": [3 strings] }
 
-2. "strategicApproach": { "bestAngle": string, "positioningStyle": string (peer/expert/challenger/insider), "whatNotToDo": [3 strings] }
+2. "strategicApproach": { "bestAngle": string, "positioningStyle": one of "Peer"|"Expert"|"Challenger"|"Insider", "whatNotToDo": [3 strings] }
 
-3. "touchpointStrategy": {
-  "compliment": { "when": string, "type": string, "avoid": string },
-  "voiceNote": { "stage": string, "whyItWorks": string, "tone": string },
-  "loom": { "trigger": string, "content": string, "personalization": string },
-  "caseStudy": { "trustStage": string, "typeOfProof": string, "format": string },
-  "leadMagnet": { "timing": string, "type": string, "conversionMoment": string },
-  "curiosity": { "hooks": [3 strings], "infoGaps": [2 strings], "psychTriggers": [2 strings] }
-}
+3. "personalisationTips": [3 strings, each a specific tip on how to make messages feel personally written for each person rather than generic]
 
 4. "followUpSystem": { "totalTouches": number (4-6), "delayDays": [array of numbers], "escalationLogic": string, "toneEvolution": string }
 
-5. "whatToAvoid": [4-5 specific mistakes for this ICP]
+5. "whatToAvoid": [4-5 specific mistakes for this customer type]
 
 IMPORTANT: Do NOT use em-dashes, asterisks, or hash signs in any output.
 
 Return ONLY valid JSON (no markdown):
 {
   "playbooks": [
-    { "icpName": string, "icpContext": ..., "strategicApproach": ..., "touchpointStrategy": ..., "followUpSystem": ..., "whatToAvoid": [...] },
+    { "icpName": string, "icpContext": ..., "strategicApproach": ..., "personalisationTips": [...], "followUpSystem": ..., "whatToAvoid": [...] },
     ... (3 total)
   ]
 }`;
@@ -175,8 +233,8 @@ Return ONLY valid JSON (no markdown):
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-1">Strategic <span className="accent-text">Outreach</span> Playbook</h2>
-      <p className="text-muted-foreground mb-8 text-sm">Tactical, psychological outreach strategy per ICP</p>
+      <h2 className="text-[20px] font-bold mb-1">Strategic <span className="accent-text">Outreach</span> Playbook</h2>
+      <p className="text-muted-foreground mb-8 text-sm">Tactical outreach strategy per target customer type</p>
 
       <div className="glass-card p-5 mb-6">
         <label className="text-sm text-muted-foreground">Outreach Angles (select up to 2)</label>
@@ -223,11 +281,12 @@ Return ONLY valid JSON (no markdown):
               {(() => {
                 const pb = playbooks[activeTab];
                 if (!pb) return null;
+                const recommendedStyle = pb.strategicApproach?.positioningStyle;
                 return (
                   <>
                     {/* ICP Context */}
                     <div className="glass-card p-5">
-                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">🎯 ICP Context, {pb.icpName}</h3>
+                      <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3">ICP Context: {pb.icpName}</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <span className="text-xs text-muted-foreground">Who they are</span>
@@ -254,51 +313,77 @@ Return ONLY valid JSON (no markdown):
 
                     {/* Strategic Approach */}
                     <div className="glass-card p-5">
-                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">🧠 Strategic Approach</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-                        <div className="bg-secondary p-3 rounded-md">
-                          <span className="text-xs text-muted-foreground">Best Angle</span>
-                          <p className="text-sm font-semibold accent-text mt-0.5">{pb.strategicApproach?.bestAngle}</p>
-                        </div>
-                        <div className="bg-secondary p-3 rounded-md">
-                          <span className="text-xs text-muted-foreground">Positioning Style</span>
-                          <p className="text-sm font-semibold mt-0.5">{pb.strategicApproach?.positioningStyle}</p>
-                        </div>
+                      <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-1">
+                        Strategic Approach
+                        <InfoTooltip text="The overall mindset and positioning style to use with this type of customer" />
+                      </h3>
+                      <div className="bg-secondary p-3 rounded-md mb-3">
+                        <span className="text-xs text-muted-foreground">Best Angle</span>
+                        <p className="text-sm font-semibold accent-text mt-0.5">{pb.strategicApproach?.bestAngle}</p>
                       </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">What NOT to do</span>
-                        <ul className="mt-1 space-y-1">
-                          {pb.strategicApproach?.whatNotToDo?.map((w: string, i: number) => <li key={i} className="text-sm text-destructive/80">✗ {w}</li>)}
-                        </ul>
+                    </div>
+
+                    {/* Positioning Style - 2x2 Card Grid */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-1">
+                        Positioning Style
+                        <InfoTooltip text="How to present yourself, whether as a peer, expert, challenger, or industry insider, based on who you are talking to" />
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {POSITIONING_STYLES.map(ps => {
+                          const isRecommended = recommendedStyle?.toLowerCase() === ps.name.toLowerCase();
+                          return (
+                            <div key={ps.name} className={`bg-secondary p-4 rounded-md border ${isRecommended ? "border-primary" : "border-border"}`}>
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="text-sm font-semibold">{ps.name}</h4>
+                                {isRecommended && (
+                                  <span className="text-[10px] font-bold accent-bg px-2 py-0.5 rounded">Recommended for you</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">{ps.desc}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* What This Looks Like in Practice */}
                     <div className="glass-card p-5">
-                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">📋 What This Looks Like in Practice</h3>
+                      <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-1">
+                        What This Looks Like in Practice
+                        <InfoTooltip text="A step-by-step real-world outreach flow to follow with this customer type" />
+                      </h3>
 
                       <div className="bg-primary/10 border border-primary/20 rounded-md p-3 mb-4 flex gap-2">
                         <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground">Likes and comments warm up the prospect and significantly increase the chances of your message being noticed and replied to.</p>
+                        <p className="text-xs text-muted-foreground">Likes, comments, and Loom videos warm up the prospect and increase the chances of your message being noticed and replied to. The whole point of LinkedIn outreach is to be remembered, not just to sell.</p>
                       </div>
 
-                      <div className="space-y-2">
-                        {PRACTICE_STEPS.map((ps) => (
-                          <div key={ps.step} className="bg-secondary p-3 rounded-md">
-                            <div className="flex items-start gap-3">
-                              <span className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold accent-bg shrink-0 mt-0.5">{ps.step}</span>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium">{ps.action}</span>
+                      <div className="space-y-4">
+                        {PRACTICE_STEPS.map((phase) => (
+                          <div key={phase.phase}>
+                            <h4 className="text-xs font-semibold text-primary mb-2">{phase.phase}</h4>
+                            <div className="space-y-2">
+                              {phase.steps.map((ps) => (
+                                <div key={ps.step} className="bg-secondary p-4 rounded-md">
+                                  <div className="flex items-start gap-3">
+                                    <span className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold accent-bg shrink-0 mt-0.5">{ps.step}</span>
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm font-semibold">{ps.action}</span>
+                                        <span className="text-[10px] text-muted-foreground">{ps.timing}</span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-1">{ps.detail}</p>
+                                      {ps.tip && (
+                                        <p className="text-xs text-primary mt-1.5">{ps.tip}</p>
+                                      )}
+                                      {ps.delay && (
+                                        <span className="text-[10px] text-primary mt-1 inline-block">⏱ {ps.delay}</span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="flex flex-wrap gap-3 mt-1">
-                                  <span className="text-xs text-muted-foreground">Purpose: {ps.purpose}</span>
-                                  <span className="text-xs text-muted-foreground">Timing: {ps.timing}</span>
-                                </div>
-                                {ps.delay && (
-                                  <span className="text-[10px] text-primary mt-1 inline-block">⏱ {ps.delay}</span>
-                                )}
-                              </div>
+                              ))}
                             </div>
                           </div>
                         ))}
@@ -306,52 +391,32 @@ Return ONLY valid JSON (no markdown):
 
                       <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 mt-4 flex gap-2">
                         <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                        <p className="text-xs text-muted-foreground">Not every step must be used. Test one sequence at a time. Adapt based on what gets responses.</p>
+                        <p className="text-xs text-muted-foreground">Do not send too many follow-ups. If someone explicitly says no, respect it. Retarget them with a helpful resource so you stay top of mind, but never push.</p>
                       </div>
                     </div>
 
-                    {/* Touchpoint Strategy (AI-generated) */}
-                    {pb.touchpointStrategy && (
+                    {/* Personalisation Tips */}
+                    {pb.personalisationTips && (
                       <div className="glass-card p-5">
-                        <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">💬 ICP-Specific Touchpoint Insights</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {Object.entries(pb.touchpointStrategy).map(([key, val]: [string, any]) => {
-                            if (!val) return null;
-                            const labels: Record<string, string> = {
-                              compliment: "Compliment Strategy", voiceNote: "Voice Note", loom: "Loom Video",
-                              caseStudy: "Case Study", leadMagnet: "Lead Magnet", curiosity: "Building Curiosity",
-                            };
-                            return (
-                              <div key={key} className="bg-secondary p-3 rounded-md">
-                                <span className="text-xs font-semibold text-primary">{labels[key] || key}</span>
-                                <div className="mt-1.5 space-y-1">
-                                  {typeof val === "object" && !Array.isArray(val) && Object.entries(val).map(([k, v]: [string, any]) => (
-                                    <div key={k}>
-                                      <span className="text-[10px] text-muted-foreground capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
-                                      {Array.isArray(v) ? (
-                                        <ul className="space-y-0.5">
-                                          {v.map((item: string, i: number) => <li key={i} className="text-xs">• {item}</li>)}
-                                        </ul>
-                                      ) : (
-                                        <p className="text-xs">{v}</p>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-1">
+                          Personalisation Tips
+                          <InfoTooltip text="How to make your messages feel specifically written for each person rather than generic" />
+                        </h3>
+                        <ul className="space-y-1.5">
+                          {pb.personalisationTips.map((tip: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground flex gap-2"><span className="text-primary shrink-0">→</span>{tip}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
 
                     {/* Loom Video Guide */}
                     <div className="glass-card p-5">
-                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
                         <Video className="w-3.5 h-3.5" /> Loom Video Guide
                       </h3>
                       <div className="bg-secondary p-4 rounded-md space-y-2">
-                        <p className="text-sm font-medium">What is Loom?</p>
+                        <p className="text-sm font-semibold">What is Loom?</p>
                         <p className="text-xs text-muted-foreground">A 1-3 minute personalised screen recording (loom.com, free). Show something relevant to them: their website, a quick audit, a useful insight. Talk directly to them. Casual and direct. Not overproduced.</p>
                         <p className="text-xs text-muted-foreground mt-2"><strong>When to use:</strong> After engagement, when insight is strong.</p>
                         <p className="text-xs text-muted-foreground"><strong>Alternatively:</strong> Record and send a voice note on LinkedIn mobile.</p>
@@ -360,12 +425,12 @@ Return ONLY valid JSON (no markdown):
 
                     {/* Delay System */}
                     <div className="glass-card p-5">
-                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                      <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3">
                         <Clock className="w-3.5 h-3.5 inline mr-1" /> Delay System
                       </h3>
                       <div className="bg-secondary p-3 rounded-md mb-3">
-                        <p className="text-sm font-medium">2-5 day gaps between messages</p>
-                        <p className="text-xs text-muted-foreground mt-1">Too fast → flagged as spam. Too slow → lose context.</p>
+                        <p className="text-sm font-semibold">2-5 day gaps between messages</p>
+                        <p className="text-xs text-muted-foreground mt-1">Too fast = flagged as spam. Too slow = lose context.</p>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-secondary p-3 rounded-md">
@@ -395,10 +460,13 @@ Return ONLY valid JSON (no markdown):
                       )}
                     </div>
 
-                    {/* What to Avoid */}
+                    {/* What NOT to Do */}
                     {pb.whatToAvoid && (
                       <div className="glass-card p-5">
-                        <h3 className="text-xs font-semibold text-destructive uppercase tracking-wider mb-3">🚫 What to Avoid</h3>
+                        <h3 className="text-xs font-medium text-destructive uppercase tracking-wider mb-3 flex items-center gap-1">
+                          What Not to Do
+                          <InfoTooltip text="Common mistakes that reduce reply rates for this specific customer type" />
+                        </h3>
                         <ul className="space-y-1.5">
                           {pb.whatToAvoid.map((w: string, i: number) => (
                             <li key={i} className="text-sm text-muted-foreground flex gap-2"><span className="text-destructive shrink-0">✗</span>{w}</li>
@@ -412,21 +480,24 @@ Return ONLY valid JSON (no markdown):
             </motion.div>
           </AnimatePresence>
 
-          {/* Sequences You Can Try */}
+          {/* Sequences to Try */}
           <div className="glass-card p-5">
-            <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-4">🔁 Sequences You Can Try</h3>
-            <p className="text-xs text-muted-foreground mb-4">Intent only. No scripts. Test which combo works best for your ICP.</p>
+            <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-2 flex items-center gap-1">
+              Sequences to Try
+              <InfoTooltip text="Different combinations of touchpoints you can test. Start with one and adapt based on what gets replies." />
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">Start with one sequence and adapt based on what gets replies.</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {SEQUENCES.map((seq, idx) => (
                 <div key={idx} className="bg-secondary p-4 rounded-md">
                   <h4 className="text-sm font-semibold mb-3">{seq.name}</h4>
                   <div className="space-y-2">
                     {seq.steps.map((step, j) => (
-                      <div key={j} className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold accent-bg shrink-0">{step.touch}</span>
+                      <div key={j} className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold accent-bg shrink-0 mt-0.5">{j + 1}</span>
                         <div>
-                          <span className="text-xs font-medium">{step.type}</span>
-                          <p className="text-[10px] text-muted-foreground">{step.intent}</p>
+                          <span className="text-xs font-medium">{step.action}</span>
+                          {step.timing && <p className="text-[10px] text-primary">{step.timing}</p>}
                         </div>
                       </div>
                     ))}
@@ -438,7 +509,7 @@ Return ONLY valid JSON (no markdown):
 
           {/* Tools to Use */}
           <div className="glass-card p-5">
-            <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-4">
               <Wrench className="w-3.5 h-3.5 inline mr-1" /> Tools to Use
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -459,7 +530,7 @@ Return ONLY valid JSON (no markdown):
 
           {/* Message Rules */}
           <div className="glass-card p-5">
-            <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-3">
               <ShieldAlert className="w-3.5 h-3.5 inline mr-1" /> Message Rules
             </h3>
             <ul className="space-y-1.5">

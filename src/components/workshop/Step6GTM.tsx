@@ -4,6 +4,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { InfoTooltip } from "./InfoTooltip";
 import { callGemini } from "@/lib/workshop-store";
 import { sanitizeAIOutput } from "@/lib/sanitize";
+import { NO_JARGON_RULE } from "@/lib/prompt-rules";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Star, Calendar, Users, Presentation, RefreshCw, Zap, AlertTriangle } from "lucide-react";
@@ -70,21 +71,27 @@ export function Step6GTM({ data, icpData, valuePropData, onboardingData, profile
     return `Core Offer: ${offer}\nIndustry: ${Array.isArray(industry) ? industry.join(", ") : industry}\nICPs:\n${icpDetail}\nValue Propositions:\n${vpDetail}`;
   }, [icps, vps, offer, industry]);
 
-  const buildChannelsPrompt = (lite: boolean) => `You are a GTM Strategist. Generate outreach channels and partner strategies per ICP.
+  const buildChannelsPrompt = (lite: boolean) => `You are a Growth Strategist. Generate outreach channels and partner strategies per target customer type.
+
+${NO_JARGON_RULE}
 
 ${inputBlock(lite)}
 
 Return JSON: { "icpStrategies": [{ "icpName": string, "channels": [{ "name": string, "effort": "Low"|"Medium"|"High", "roi": "Low"|"Medium"|"High", "useCase": string, "startHere": boolean, "tips": [${lite ? "2" : "3"} strings] }], "partners": { "types": [{ "type": string, "angle": string, "offer": string, "snippet": string }] } }] }
 Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
 
-  const buildExecutionPrompt = (lite: boolean) => `You are a GTM Strategist. Generate an execution timeline per ICP.
+  const buildExecutionPrompt = (lite: boolean) => `You are a Growth Strategist. Generate an execution timeline per target customer type.
+
+${NO_JARGON_RULE}
 
 ${inputBlock(lite)}
 
 Return JSON: { "icpStrategies": [{ "icpName": string, "timeline": [{ "phase": string, "title": string, "tasks": [${lite ? "2-3" : "3-5"} strings] }] }] }
 Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
 
-  const buildMagnetsPrompt = (lite: boolean) => `You are a GTM Strategist. Generate lead magnets and event-led growth strategies per ICP.
+  const buildMagnetsPrompt = (lite: boolean) => `You are a Growth Strategist. Generate lead magnets and event-led growth strategies per target customer type.
+
+${NO_JARGON_RULE}
 
 ${inputBlock(lite)}
 
@@ -108,20 +115,13 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
     setLoading(true);
     setLoadingSection(SECTION_LABELS.channels);
 
-    console.log("GTM API call started", lite ? "(lite)" : "(full)");
-
-    // Run 3 calls in parallel with safe wrappers
     const [channelsResult, executionResult, magnetsResult] = await Promise.all([
       safeGenerate(() => callSection(buildChannelsPrompt, SECTION_LABELS.channels, lite)),
       safeGenerate(() => callSection(buildExecutionPrompt, SECTION_LABELS.execution, lite)),
       safeGenerate(() => callSection(buildMagnetsPrompt, SECTION_LABELS.magnets, lite)),
     ]);
 
-    console.log("GTM results:", { channels: !!channelsResult, execution: !!executionResult, magnets: !!magnetsResult });
-
-    // If all failed on full mode, auto-retry with lite
     if (!channelsResult && !executionResult && !magnetsResult && !lite) {
-      console.warn("All sections failed, auto-retrying with lite prompts...");
       setLoadingSection("Retrying with simplified prompts...");
       const [chLite, exLite, mgLite] = await Promise.all([
         safeGenerate(() => callSection(buildChannelsPrompt, SECTION_LABELS.channels, true)),
@@ -139,7 +139,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
       const merged = mergeResults(chLite, exLite, mgLite);
       setResult(merged);
       onSave({ result: merged });
-      toast({ title: "GTM Strategy generated (lite)", duration: 3000 });
+      toast({ title: "Strategy generated (lite)", duration: 3000 });
       setLoading(false);
       isGenerating.current = false;
       return;
@@ -155,7 +155,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
     const merged = mergeResults(channelsResult, executionResult, magnetsResult);
     setResult(merged);
     onSave({ result: merged });
-    toast({ title: "GTM Strategy generated", duration: 3000 });
+    toast({ title: "Strategy generated", duration: 3000 });
     setLoading(false);
     isGenerating.current = false;
   };
@@ -164,10 +164,8 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
     const chStrats = channels?.icpStrategies || [];
     const exStrats = execution?.icpStrategies || [];
     const mgStrats = magnets?.icpStrategies || [];
-
     const maxLen = Math.max(chStrats.length, exStrats.length, mgStrats.length, icps.length);
     const merged: any[] = [];
-
     for (let i = 0; i < maxLen; i++) {
       merged.push({
         icpName: chStrats[i]?.icpName || exStrats[i]?.icpName || mgStrats[i]?.icpName || icps[i]?.name || `ICP ${i + 1}`,
@@ -178,7 +176,6 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
         eventLedGrowth: mgStrats[i]?.eventLedGrowth || null,
       });
     }
-
     return { icpStrategies: merged };
   };
 
@@ -187,18 +184,18 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-1">Your <span className="accent-text">GTM Strategy</span></h2>
-      <p className="text-muted-foreground mb-8 text-sm">A complete, actionable go-to-market plan per ICP</p>
+      <h2 className="text-[20px] font-bold mb-1">Your <span className="accent-text">Growth Strategy</span></h2>
+      <p className="text-muted-foreground mb-8 text-sm">A complete, actionable growth plan per target customer type</p>
 
       {!loading && !result && !error && (
         <Button onClick={() => generate(false)} disabled={loading} className="accent-bg hover:opacity-90 w-full h-11 font-semibold">
-          Generate GTM Strategy
+          Generate Growth Strategy
         </Button>
       )}
 
       {loading && (
         <div className="space-y-3">
-          <LoadingSpinner text={loadingSection || "Generating your GTM strategy..."} />
+          <LoadingSpinner text={loadingSection || "Generating your growth strategy..."} />
           <p className="text-xs text-muted-foreground text-center">Building 3 sections in parallel for faster results</p>
         </div>
       )}
@@ -211,7 +208,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
             </div>
           </div>
           <div>
-            <h3 className="font-semibold text-foreground mb-1">We could not generate your GTM strategy</h3>
+            <h3 className="text-base font-semibold text-foreground mb-1">We could not generate your growth strategy</h3>
             <p className="text-sm text-muted-foreground">This can happen due to network or load issues. Please try again.</p>
           </div>
           <div className="flex gap-3 justify-center">
@@ -259,16 +256,22 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                           {strat.channels.map((ch: any, i: number) => (
                             <div key={i} className={`glass-card p-5 ${ch.startHere ? "border-primary" : ""}`}>
                               {ch.startHere && <span className="text-[10px] font-bold accent-bg px-2 py-0.5 rounded mb-2 inline-block">START HERE</span>}
-                              <h4 className="font-semibold text-sm mb-2">{ch.name}</h4>
+                              <h4 className="text-base font-semibold mb-2">{ch.name}</h4>
                               <div className="flex gap-3 mb-3">
                                 <span className="text-xs text-muted-foreground">Effort: <span className="text-foreground">{ch.effort}</span></span>
                                 <span className="text-xs text-muted-foreground">ROI: <span className="text-foreground">{ch.roi}</span></span>
                               </div>
-                              <p className="text-xs text-muted-foreground mb-3">{ch.useCase}</p>
+                              <p className="text-sm text-muted-foreground mb-3">{ch.useCase}</p>
                               {ch.tips && (
-                                <ul className="space-y-1">
-                                  {ch.tips.map((t: string, j: number) => <li key={j} className="text-xs text-muted-foreground">→ {t}</li>)}
-                                </ul>
+                                <>
+                                  <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                                    Channel Tips
+                                    <InfoTooltip text="Specific tactics for how to use each outreach channel effectively, tailored to this customer type" />
+                                  </h5>
+                                  <ul className="space-y-1">
+                                    {ch.tips.map((t: string, j: number) => <li key={j} className="text-xs text-muted-foreground">→ {t}</li>)}
+                                  </ul>
+                                </>
                               )}
                             </div>
                           ))}
@@ -287,7 +290,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                                 <span className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold accent-bg">{i + 1}</span>
                                 <div>
                                   <span className="text-xs text-primary font-medium">{phase.phase}</span>
-                                  <h4 className="font-semibold text-sm">{phase.title}</h4>
+                                  <h4 className="text-base font-semibold">{phase.title}</h4>
                                 </div>
                               </div>
                               <ul className="space-y-1.5 ml-11">
@@ -306,13 +309,13 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                     {activeModule === 2 && (
                       strat.partners?.types && strat.partners.types.length > 0 ? (
                         <div className="space-y-3">
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                             Partner Outreach
                             <InfoTooltip text="Strategy for growing through partnerships with complementary businesses" />
                           </h3>
                           {strat.partners.types.map((p: any, i: number) => (
                             <div key={i} className="glass-card p-5">
-                              <h4 className="font-semibold text-sm mb-1">{p.type}</h4>
+                              <h4 className="text-base font-semibold mb-1">{p.type}</h4>
                               <div className="space-y-2 mt-3">
                                 <div><span className="text-xs text-muted-foreground">Angle:</span> <span className="text-sm">{p.angle}</span></div>
                                 <div><span className="text-xs text-muted-foreground">Offer:</span> <span className="text-sm">{p.offer}</span></div>
@@ -334,7 +337,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                     {activeModule === 3 && (
                       strat.leadMagnets && strat.leadMagnets.length > 0 ? (
                         <div>
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-3">
+                          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-3">
                             Lead Magnets
                             <InfoTooltip text="High-value free resources used to attract prospects and start conversations without cold pitching" />
                           </h3>
@@ -347,7 +350,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                                   </div>
                                 )}
                                 <span className="text-[10px] font-medium text-primary uppercase">{lm.type || lm.format}</span>
-                                <h4 className="font-semibold text-sm mt-1 mb-2">{lm.name}</h4>
+                                <h4 className="text-base font-semibold mt-1 mb-2">{lm.name}</h4>
                                 <p className="text-xs text-muted-foreground mb-2 accent-text">For {strat.icpName || `ICP ${activeIcpTab + 1}`}</p>
                                 {lm.includes && (
                                   <ul className="space-y-1 mb-3">
@@ -384,13 +387,13 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                     {activeModule === 4 && (
                       strat.eventLedGrowth ? (
                         <div className="space-y-4">
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                             Event-Led Growth
-                            <InfoTooltip text="Using events (online or offline) to attract, warm up, and convert your ICPs" />
+                            <InfoTooltip text="Using events, online or in-person, to attract, educate, and convert your ideal customers" />
                           </h3>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="glass-card p-5">
-                              <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+                              <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Presentation className="w-3.5 h-3.5" /> Online Events
                               </h4>
                               {strat.eventLedGrowth.onlineEvents?.map((ev: any, i: number) => (
@@ -401,7 +404,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
                               ))}
                             </div>
                             <div className="glass-card p-5">
-                              <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+                              <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Users className="w-3.5 h-3.5" /> Offline Events
                               </h4>
                               {strat.eventLedGrowth.offlineEvents?.map((ev: any, i: number) => (
@@ -415,7 +418,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
 
                           {strat.eventLedGrowth.eventFunnel && (
                             <div className="glass-card p-5">
-                              <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+                              <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Calendar className="w-3.5 h-3.5" /> Event Funnel
                               </h4>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -434,7 +437,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
 
                           {strat.eventLedGrowth.conversionStrategy && (
                             <div className="glass-card p-5">
-                              <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Conversion Strategy</h4>
+                              <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-2">Conversion Strategy</h4>
                               <p className="text-sm text-muted-foreground">{strat.eventLedGrowth.conversionStrategy}</p>
                             </div>
                           )}
