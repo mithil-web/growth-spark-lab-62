@@ -205,7 +205,13 @@ Rules:
                     Core Angle
                     <InfoTooltip text="The single strongest hook to lead with when talking to this customer type: Authority, ROI, Speed, or Trust" />
                   </h4>
-                  <p className="text-sm text-muted-foreground">{result[activeTab].coreAngle}</p>
+                  <p className="text-sm font-semibold accent-text">{typeof result[activeTab].coreAngle === 'string' ? result[activeTab].coreAngle.split(':')[0] || result[activeTab].coreAngle : result[activeTab].coreAngle}</p>
+                  {typeof result[activeTab].coreAngle === 'string' && result[activeTab].coreAngle.includes(':') && (
+                    <div className="mt-2 bg-secondary p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Why this angle works</p>
+                      <p className="text-sm text-muted-foreground">{result[activeTab].coreAngle.split(':').slice(1).join(':').trim()}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
