@@ -4,7 +4,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { InfoTooltip } from "./InfoTooltip";
 import { callGemini } from "@/lib/workshop-store";
 import { sanitizeAIOutput } from "@/lib/sanitize";
-import { NO_JARGON_RULE } from "@/lib/prompt-rules";
+import { NO_JARGON_RULE, PERSONALISATION_RULE } from "@/lib/prompt-rules";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Star, Calendar, Users, Presentation, RefreshCw, Zap, AlertTriangle } from "lucide-react";
