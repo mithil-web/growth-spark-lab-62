@@ -22,8 +22,10 @@ const stepLabels = [
 
 export function ProgressBar({ currentStep, totalSteps, onSave, onRestart }: ProgressBarProps) {
   if (currentStep === 0) return null;
-  const pct = (currentStep / totalSteps) * 100;
-  const label = stepLabels[currentStep] || "";
+  const clampedStep = Math.min(currentStep, totalSteps);
+  const pct = (clampedStep / totalSteps) * 100;
+  const isComplete = currentStep > totalSteps;
+  const label = isComplete ? "🎉 Complete" : stepLabels[currentStep] || "";
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
