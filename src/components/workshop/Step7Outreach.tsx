@@ -7,7 +7,7 @@ import { sanitizeAIOutput } from "@/lib/sanitize";
 import { NO_JARGON_RULE, PERSONALISATION_RULE } from "@/lib/prompt-rules";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, AlertTriangle, Video, Clock, ExternalLink, Wrench, ShieldAlert, X, Lightbulb } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Video, Clock, ShieldAlert, X, Lightbulb } from "lucide-react";
 
 const ANGLES = ["Authority", "ROI", "Pain-led", "Contrarian", "Curiosity", "Offer-led"];
 const MAX_ANGLES = 2;
