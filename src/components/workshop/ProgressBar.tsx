@@ -52,8 +52,14 @@ export function ProgressBar({ currentStep, totalSteps, onSave, onRestart }: Prog
             />
             <div className="h-5 w-px bg-border hidden sm:block shrink-0" />
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              Step <span className="text-primary font-semibold">{currentStep}</span>
-              <span className="text-muted-foreground"> / {totalSteps}</span>
+              {isComplete ? (
+                <span className="text-primary font-semibold">Complete</span>
+              ) : (
+                <>
+                  Step <span className="text-primary font-semibold">{clampedStep}</span>
+                  <span className="text-muted-foreground"> / {totalSteps}</span>
+                </>
+              )}
             </span>
           </div>
 

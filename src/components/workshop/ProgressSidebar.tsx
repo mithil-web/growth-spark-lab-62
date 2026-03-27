@@ -23,7 +23,7 @@ export function ProgressSidebar({ currentStep, onNavigate }: ProgressSidebarProp
 
   if (currentStep < 1 || currentStep > 8) return null;
 
-  const stepIcons = ["1", "2", "3", "4", "5", "6", "7"];
+  const stepIcons = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
   const content = (
     <nav className="flex flex-col h-full">
