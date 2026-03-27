@@ -10,19 +10,22 @@ interface ProgressBarProps {
 
 const stepLabels = [
   "Welcome",
-  "Onboarding",
+  "Basics",
   "Profile Optimiser",
   "ICP Builder",
   "Value Proposition",
   "Website Builder",
   "GTM Strategy",
   "Outreach Playbook",
+  "Final Summary",
 ];
 
 export function ProgressBar({ currentStep, totalSteps, onSave, onRestart }: ProgressBarProps) {
   if (currentStep === 0) return null;
-  const pct = (currentStep / totalSteps) * 100;
-  const label = stepLabels[currentStep] || "";
+  const clampedStep = Math.min(currentStep, totalSteps);
+  const pct = (clampedStep / totalSteps) * 100;
+  const isComplete = currentStep > totalSteps;
+  const label = isComplete ? "🎉 Complete" : stepLabels[currentStep] || "";
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50">
@@ -49,8 +52,14 @@ export function ProgressBar({ currentStep, totalSteps, onSave, onRestart }: Prog
             />
             <div className="h-5 w-px bg-border hidden sm:block shrink-0" />
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              Step <span className="text-primary font-semibold">{currentStep}</span>
-              <span className="text-muted-foreground"> / {totalSteps}</span>
+              {isComplete ? (
+                <span className="text-primary font-semibold">Complete</span>
+              ) : (
+                <>
+                  Step <span className="text-primary font-semibold">{clampedStep}</span>
+                  <span className="text-muted-foreground"> / {totalSteps}</span>
+                </>
+              )}
             </span>
           </div>
 

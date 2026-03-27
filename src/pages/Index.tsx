@@ -21,7 +21,7 @@ import { generatePDF } from "@/lib/pdf-export";
 import { useToast } from "@/hooks/use-toast";
 
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 const Index = () => {
   const [step, setStep] = useState(-1);
