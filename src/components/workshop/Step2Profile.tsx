@@ -338,7 +338,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
 
           <div className="glass-card p-6">
             <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              Generated Headlines
+              Optimised Headlines
               <InfoTooltip text="AI-crafted headline alternatives using different frameworks: outcome-driven, authority-driven, and benefit-driven" />
             </h3>
             {result.headlines?.map((h: string, i: number) => (
