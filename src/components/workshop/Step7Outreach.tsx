@@ -168,6 +168,8 @@ export function Step7Outreach({ data, icpData, valuePropData, profileData, onboa
 
 ${NO_JARGON_RULE}
 
+${PERSONALISATION_RULE}
+
 - Client: ${userName}
 - Offer: ${offer}
 - Value Proposition: ${topVP}
