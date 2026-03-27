@@ -106,11 +106,6 @@ const SEQUENCES = [
   },
 ];
 
-const TOOLS = [
-  { name: "CLAY", url: "https://clay.com", desc: "Pulls live data about prospects: recent posts, job changes, company news. Use to personalise your first message.", example: "\"Saw you just expanded your team, here is something useful for your outreach right now.\"" },
-  { name: "CALENDLY", url: "https://calendly.com/founder-myntmore/30min", desc: "Always include your booking link in any CTA message. Send a direct booking link. Never ask them to reply with their availability, it creates friction.", example: null },
-  { name: "APOLLO", url: "https://apollo.io", desc: "Use to find work emails when LinkedIn gets no response. Free tier available. Search by name + company name.", example: null },
-];
 
 const MESSAGE_RULES = [
   "Every message must be under 5 lines",
