@@ -191,6 +191,7 @@ For EACH of the 3 target customer types, generate a strategic playbook with thes
 5. "whatToAvoid": [4-5 specific mistakes for this customer type]
 
 IMPORTANT: Do NOT use em-dashes, asterisks, or hash signs in any output.
+IMPORTANT: When mentioning Clay, always reference it as "Clay (https://clay.com/?via=23e526)". When mentioning Apollo, always reference it as "Apollo (https://apollo.partnerlinks.io/7gvq2nugzjir)". These are the correct links.
 
 Return ONLY valid JSON (no markdown):
 {
