@@ -7,6 +7,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { InfoTooltip } from "./InfoTooltip";
 import { callGemini } from "@/lib/workshop-store";
 import { sanitizeAIOutput } from "@/lib/sanitize";
+import { NO_JARGON_RULE } from "@/lib/prompt-rules";
 import { motion } from "framer-motion";
 import { ArrowLeft, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -76,6 +77,8 @@ export function Step2Profile({ data, onSave, onNext, onBack }: Step2Props) {
     setResult(null);
 
     const prompt = `You are an expert LinkedIn Profile Strategist specialising in B2B Lead Generation.
+
+${NO_JARGON_RULE}
 
 Analyse and optimise this LinkedIn profile:
 - Current Headline: ${form.headline}
