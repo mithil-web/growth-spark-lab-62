@@ -158,6 +158,8 @@ export function Step5Website({ data, icpData, valuePropData, profileData, onSave
 
 ${NO_JARGON_RULE}
 
+${PERSONALISATION_RULE}
+
 COLOUR OVERRIDE (MANDATORY): The ONLY colours to use in this website are: Primary: ${form.primaryColor}, Secondary: ${form.secondaryColor}. Do not use yellow (#FFC947) or black (#000000) unless those are the user's selected colours. Apply primary colour to: CTA buttons, headings, highlighted text. Apply secondary colour to: background, cards, section fills. CSS variables must be: --primary: ${form.primaryColor}; --secondary: ${form.secondaryColor};
 
 IMPORTANT: The website MUST include a sticky navigation header at the top of every page. The header must contain: the brand logo or name on the left, navigation links in the centre (e.g. About, Services, Results, FAQ, Contact), and a CTA button on the right (e.g. 'Book a Call'). The header must be visible at all times as the user scrolls.
