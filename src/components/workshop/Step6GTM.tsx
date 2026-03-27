@@ -86,6 +86,8 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
 
 ${NO_JARGON_RULE}
 
+${PERSONALISATION_RULE}
+
 ${inputBlock(lite)}
 
 Return JSON: { "icpStrategies": [{ "icpName": string, "timeline": [{ "phase": string, "title": string, "tasks": [${lite ? "2-3" : "3-5"} strings] }] }] }
