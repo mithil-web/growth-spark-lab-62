@@ -19,7 +19,7 @@ import {
 } from "@/lib/workshop-store";
 import { generatePDF } from "@/lib/pdf-export";
 import { useToast } from "@/hooks/use-toast";
-import { Save } from "lucide-react";
+
 
 const TOTAL_STEPS = 7;
 
