@@ -185,7 +185,7 @@ Rules: No em-dashes, asterisks, or hash signs. Return ONLY valid JSON.`;
     return { icpStrategies: merged };
   };
 
-  const modules = ["Channels", "Timeline", "Partners", "Lead Magnets", "Event-Led Growth"];
+  const modules = ["Channels", "Timeline", "Partner-Led Growth", "Lead Magnets", "Event-Led Growth"];
   const strategies = result?.icpStrategies || (result?.channels ? [result] : []);
 
   return (
