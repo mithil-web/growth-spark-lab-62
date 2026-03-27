@@ -142,14 +142,39 @@ Rules:
       <h2 className="text-2xl font-bold mb-1">Your <span className="accent-text">GTM Strategy</span></h2>
       <p className="text-muted-foreground mb-8 text-sm">A complete, actionable go-to-market plan per ICP</p>
 
-      {!loading && !result && (
-        <Button onClick={generate} className="accent-bg hover:opacity-90 w-full h-11 font-semibold">
+      {!loading && !result && !error && (
+        <Button onClick={() => generate(false)} disabled={loading} className="accent-bg hover:opacity-90 w-full h-11 font-semibold">
           Generate GTM Strategy
         </Button>
       )}
 
       {loading && <LoadingSpinner text="Generating your GTM strategy..." />}
-      {error && <p className="text-destructive text-sm mb-4">{error}</p>}
+
+      {error && !loading && !result && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-destructive" />
+            </div>
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground mb-1">
+              {error === "timeout" ? "Generation timed out" : error === "parse_error" ? "Could not process the response" : "We could not generate your GTM strategy"}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {error === "timeout" ? "The request took too long. Try the Lite version for faster results." : "This can happen due to network or load issues. Please try again."}
+            </p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => generate(false)} className="gap-2">
+              <RefreshCw className="w-4 h-4" /> Retry
+            </Button>
+            <Button onClick={() => generate(true)} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/10">
+              <Zap className="w-4 h-4" /> Generate Lite Version
+            </Button>
+          </div>
+        </motion.div>
+      )}
 
       {strategies.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
