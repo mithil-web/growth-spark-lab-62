@@ -6,7 +6,14 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { callGemini } from "@/lib/workshop-store";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, Upload, ArrowLeft, Image } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Step5Props {
   data: any;
@@ -14,6 +21,7 @@ interface Step5Props {
   valuePropData: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
 const FOLLOW_UP_PROMPTS = [
@@ -24,19 +32,48 @@ const FOLLOW_UP_PROMPTS = [
   "Design a pricing section with 3 tiers: Starter, Growth, Enterprise. Include feature comparison and FAQ.",
 ];
 
-export function Step5Website({ data, icpData, valuePropData, onSave, onNext }: Step5Props) {
+const GENERAL_FAQS = [
+  { q: "What is the Website Builder step?", a: "It generates a ready-to-paste prompt you can use in AI Studio to build a high-converting landing page based on your ICP and value prop data." },
+  { q: "Can I customise the output?", a: "Yes. Use the follow-up prompts below to refine specific sections like mobile layout, testimonials, or SEO." },
+  { q: "What if my brand has specific guidelines?", a: "Upload a design reference screenshot. The prompt will adapt the layout structure while using your defined colors." },
+];
+
+const AI_STUDIO_FAQS = [
+  { q: "How do I use Google AI Studio?", a: "1. Open aistudio.google.com/apps\n2. Paste the generated prompt\n3. Optionally upload a design screenshot\n4. Click Generate" },
+  { q: "How do I deploy the generated site?", a: "1. Copy the generated code from AI Studio\n2. Create a new repo on GitHub\n3. Connect to Vercel or Netlify\n4. Deploy with one click" },
+  { q: "What model should I use?", a: "Use Gemini 2.0 Flash for speed, or Gemini Pro for higher quality output. Both work well for website generation." },
+];
+
+const LOVABLE_FAQS = [
+  { q: "Can I paste the prompt into Lovable?", a: "Yes. Lovable can interpret the prompt and generate a full React site with Tailwind CSS styling." },
+  { q: "How do I optimize credits?", a: "Use specific, detailed prompts. Avoid regenerating the entire site — use follow-up prompts to refine individual sections." },
+  { q: "What's the best iteration strategy?", a: "Generate once, then iterate section by section. Fix layout first, then copy, then design polish." },
+];
+
+export function Step5Website({ data, icpData, valuePropData, onSave, onNext, onBack }: Step5Props) {
   const [form, setForm] = useState({
     brandName: data?.brandName || "",
     primaryColor: data?.primaryColor || "#FFC947",
     secondaryColor: data?.secondaryColor || "#111111",
-    niche: data?.niche || icpData?.niche || "",
   });
+  const [designRef, setDesignRef] = useState<string | null>(data?.designRef || null);
   const [generatedPrompt, setGeneratedPrompt] = useState(data?.generatedPrompt || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { toast } = useToast();
 
   const update = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDesignRef(reader.result as string);
+      toast({ title: "✓ Design reference uploaded", duration: 2000 });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const generate = async () => {
     if (!form.brandName.trim()) { setError("Brand name is required"); return; }
@@ -52,6 +89,10 @@ export function Step5Website({ data, icpData, valuePropData, onSave, onNext }: S
     ).join("\n");
     const topVP = vps[0] ? `${vps[0].corePromise || vps[0].desiredOutcome}` : offer;
 
+    const designInstruction = designRef
+      ? "\n\nIMPORTANT: A design reference image has been provided. Use it for STRUCTURE and LAYOUT only. Do NOT copy colors from the reference. Use ONLY the brand colors specified above."
+      : "";
+
     const prompt = `You are a world-class conversion rate optimisation expert and B2B web designer.
 
 Generate a comprehensive, ready-to-paste prompt for building a high-converting landing page.
@@ -60,11 +101,11 @@ Inputs:
 - Brand Name: ${form.brandName}
 - Primary Colour: ${form.primaryColor}
 - Secondary Colour: ${form.secondaryColor}
-- Niche: ${form.niche || "General B2B"}
 - Core Offer: ${offer}
 - Value Proposition: ${topVP}
 - Target ICPs and Pain Points:
 ${icpSummary}
+${designInstruction}
 
 The generated website must have EXACTLY these 8 sections in this order:
 1. Hero Section
@@ -88,7 +129,7 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
       const timeoutP = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60000));
       const raw = await Promise.race([callGemini(prompt), timeoutP]) as string;
       setGeneratedPrompt(raw);
-      onSave({ ...form, generatedPrompt: raw });
+      onSave({ ...form, generatedPrompt: raw, designRef });
       toast({ title: "✓ Saved", duration: 3000 });
     } catch (e: any) {
       setError(e.message === "timeout" ? "This is taking too long. Please try again." : (e.message || "Failed"));
@@ -128,10 +169,37 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
             </div>
           </div>
         </div>
+
+        {/* Design Reference Upload */}
         <div>
-          <Label className="text-sm text-muted-foreground">Niche</Label>
-          <Input value={form.niche} onChange={e => update("niche", e.target.value)} placeholder="e.g. AI-powered HR tech" className="mt-1 bg-secondary border-border focus:border-primary" />
+          <Label className="text-sm text-muted-foreground">Design Reference (optional)</Label>
+          <p className="text-xs text-muted-foreground mb-2">Upload a screenshot of a site you like. We'll use its structure, not its colors.</p>
+          <div className="mt-1">
+            {designRef ? (
+              <div className="relative">
+                <img src={designRef} alt="Design reference" className="w-full max-h-48 object-cover rounded-md border border-border" />
+                <button onClick={() => setDesignRef(null)} className="absolute top-2 right-2 bg-card/80 text-foreground p-1 rounded text-xs hover:bg-card">✕</button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center gap-2 w-full h-20 rounded-md border border-dashed border-border bg-secondary cursor-pointer hover:border-muted-foreground transition-colors">
+                <Upload className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Drop image or click to upload</span>
+                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+              </label>
+            )}
+          </div>
         </div>
+
+        {/* Pinterest Link */}
+        <a
+          href="https://www.pinterest.com/search/pins/?q=website%20design%20inspiration"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Image className="w-4 h-4" />
+          Explore design inspiration on Pinterest →
+        </a>
       </div>
 
       {error && <p className="text-destructive text-sm mb-4">{error}</p>}
@@ -183,13 +251,60 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
             </div>
           </div>
 
+          {/* FAQ Section */}
+          <div className="glass-card p-5">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Frequently Asked Questions</h3>
+            <Tabs defaultValue="general">
+              <TabsList className="bg-secondary w-full">
+                <TabsTrigger value="general" className="flex-1 text-xs">General</TabsTrigger>
+                <TabsTrigger value="aistudio" className="flex-1 text-xs">AI Studio & Deploy</TabsTrigger>
+                <TabsTrigger value="lovable" className="flex-1 text-xs">Lovable</TabsTrigger>
+              </TabsList>
+              <TabsContent value="general">
+                <Accordion type="single" collapsible>
+                  {GENERAL_FAQS.map((faq, i) => (
+                    <AccordionItem key={i} value={`g-${i}`} className="border-border">
+                      <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3">{faq.q}</AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">{faq.a}</AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </TabsContent>
+              <TabsContent value="aistudio">
+                <Accordion type="single" collapsible>
+                  {AI_STUDIO_FAQS.map((faq, i) => (
+                    <AccordionItem key={i} value={`a-${i}`} className="border-border">
+                      <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3">{faq.q}</AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">{faq.a}</AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </TabsContent>
+              <TabsContent value="lovable">
+                <Accordion type="single" collapsible>
+                  {LOVABLE_FAQS.map((faq, i) => (
+                    <AccordionItem key={i} value={`l-${i}`} className="border-border">
+                      <AccordionTrigger className="text-sm text-foreground hover:no-underline py-3">{faq.q}</AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground whitespace-pre-wrap">{faq.a}</AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </TabsContent>
+            </Tabs>
+          </div>
+
           <Button onClick={generate} variant="ghost" className="w-full text-muted-foreground">Regenerate</Button>
         </motion.div>
       )}
 
       {generatedPrompt && (
-        <div className="mt-8 flex justify-end">
-          <Button onClick={() => { onSave({ ...form, generatedPrompt }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
+        <div className="mt-8 flex items-center justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          ) : <div />}
+          <Button onClick={() => { onSave({ ...form, generatedPrompt, designRef }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step →
           </Button>
         </div>

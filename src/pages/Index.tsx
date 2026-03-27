@@ -18,18 +18,18 @@ import {
 } from "@/lib/workshop-store";
 import { generatePDF } from "@/lib/pdf-export";
 import { useToast } from "@/hooks/use-toast";
+import { Save } from "lucide-react";
 
 const TOTAL_STEPS = 7;
 
 const Index = () => {
-  const [step, setStep] = useState(-1); // -1 = loading, 0 = welcome
+  const [step, setStep] = useState(-1);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<any>(null);
   const [fromBackup, setFromBackup] = useState(false);
   const { toast } = useToast();
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Check for existing session
   useEffect(() => {
     const existingId = getSessionId();
     if (existingId) {
@@ -37,10 +37,8 @@ const Index = () => {
         if (data) {
           setSessionData(data);
           setSessionId(existingId);
-          setStep(-2); // Show resume prompt
-          if (!data.session_id && data.user_name) {
-            setFromBackup(true);
-          }
+          setStep(-2);
+          if (!data.session_id && data.user_name) setFromBackup(true);
         } else {
           setStep(0);
         }
@@ -79,12 +77,7 @@ const Index = () => {
   const handleResume = () => {
     setStep(sessionData?.current_step || 1);
     if (fromBackup) {
-      toast({
-        title: "⚠️ Loaded from local backup",
-        description: "Some data may not be fully synced",
-        variant: "destructive",
-        duration: 5000,
-      });
+      toast({ title: "⚠️ Loaded from local backup", description: "Some data may not be fully synced", variant: "destructive", duration: 5000 });
     }
   };
 
@@ -97,9 +90,7 @@ const Index = () => {
 
   const goToStep = (s: number) => {
     setStep(s);
-    if (sessionId) {
-      saveProgress(sessionId, { current_step: s });
-    }
+    if (sessionId) saveProgress(sessionId, { current_step: s });
     setSessionData((prev: any) => ({ ...prev, current_step: s }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -108,6 +99,13 @@ const Index = () => {
     setSessionData((prev: any) => ({ ...prev, [field]: data }));
     debouncedSave(field, data);
     toast({ title: "✓ Saved", duration: 3000 });
+  };
+
+  const handleManualSave = () => {
+    if (sessionId && sessionData) {
+      saveProgress(sessionId, { current_step: step });
+      toast({ title: "✓ Progress saved", duration: 2000 });
+    }
   };
 
   if (step === -1) {
@@ -123,7 +121,10 @@ const Index = () => {
       <ProgressBar currentStep={step > 0 ? step : 0} totalSteps={TOTAL_STEPS} />
 
       {step > 0 && step <= TOTAL_STEPS && (
-        <div className="fixed top-12 right-4 z-50">
+        <div className="fixed top-12 right-4 z-50 flex items-center gap-2">
+          <button onClick={handleManualSave} className="p-2 rounded-md bg-secondary border border-border text-muted-foreground hover:text-primary transition-colors" title="Save Progress">
+            <Save className="w-4 h-4" />
+          </button>
           <RestartButton onRestart={handleStartFresh} />
         </div>
       )}
@@ -131,81 +132,34 @@ const Index = () => {
       <div className={step > 0 ? "pt-20 px-4" : ""}>
         <AnimatePresence mode="wait">
           {step === -2 && (
-            <WelcomeScreen
-              onStart={handleStart}
-              resumeData={sessionData}
-              onResume={handleResume}
-              onStartFresh={handleStartFresh}
-            />
+            <WelcomeScreen onStart={handleStart} resumeData={sessionData} onResume={handleResume} onStartFresh={handleStartFresh} />
           )}
           {step === 0 && (
             <WelcomeScreen onStart={handleStart} />
           )}
           {step === 1 && (
-            <Step1Onboarding
-              data={sessionData?.onboarding_data}
-              onSave={(d) => saveField("onboarding_data", d)}
-              onNext={() => goToStep(2)}
-            />
+            <Step1Onboarding data={sessionData?.onboarding_data} onSave={(d) => saveField("onboarding_data", d)} onNext={() => goToStep(2)} />
           )}
           {step === 2 && (
-            <Step2Profile
-              data={sessionData?.profile_data}
-              onSave={(d) => saveField("profile_data", d)}
-              onNext={() => goToStep(3)}
-            />
+            <Step2Profile data={sessionData?.profile_data} onSave={(d) => saveField("profile_data", d)} onNext={() => goToStep(3)} onBack={() => goToStep(1)} />
           )}
           {step === 3 && (
-            <Step3ICP
-              data={sessionData?.icp_data}
-              onSave={(d) => saveField("icp_data", d)}
-              onNext={() => goToStep(4)}
-            />
+            <Step3ICP data={sessionData?.icp_data} onSave={(d) => saveField("icp_data", d)} onNext={() => goToStep(4)} onBack={() => goToStep(2)} />
           )}
           {step === 4 && (
-            <Step4ValueProp
-              data={sessionData?.value_prop_data}
-              icpData={sessionData?.icp_data}
-              onSave={(d) => saveField("value_prop_data", d)}
-              onNext={() => goToStep(5)}
-            />
+            <Step4ValueProp data={sessionData?.value_prop_data} icpData={sessionData?.icp_data} onSave={(d) => saveField("value_prop_data", d)} onNext={() => goToStep(5)} onBack={() => goToStep(3)} />
           )}
           {step === 5 && (
-            <Step5Website
-              data={sessionData?.website_data}
-              icpData={sessionData?.icp_data}
-              valuePropData={sessionData?.value_prop_data}
-              onSave={(d) => saveField("website_data", d)}
-              onNext={() => goToStep(6)}
-            />
+            <Step5Website data={sessionData?.website_data} icpData={sessionData?.icp_data} valuePropData={sessionData?.value_prop_data} onSave={(d) => saveField("website_data", d)} onNext={() => goToStep(6)} onBack={() => goToStep(4)} />
           )}
           {step === 6 && (
-            <Step6GTM
-              data={sessionData?.gtm_data}
-              icpData={sessionData?.icp_data}
-              valuePropData={sessionData?.value_prop_data}
-              onboardingData={sessionData?.onboarding_data}
-              onSave={(d) => saveField("gtm_data", d)}
-              onNext={() => goToStep(7)}
-            />
+            <Step6GTM data={sessionData?.gtm_data} icpData={sessionData?.icp_data} valuePropData={sessionData?.value_prop_data} onboardingData={sessionData?.onboarding_data} onSave={(d) => saveField("gtm_data", d)} onNext={() => goToStep(7)} onBack={() => goToStep(5)} />
           )}
           {step === 7 && (
-            <Step7Outreach
-              data={sessionData?.outreach_data}
-              icpData={sessionData?.icp_data}
-              valuePropData={sessionData?.value_prop_data}
-              profileData={sessionData?.profile_data}
-              onboardingData={sessionData?.onboarding_data}
-              onSave={(d) => saveField("outreach_data", d)}
-              onNext={() => goToStep(8)}
-            />
+            <Step7Outreach data={sessionData?.outreach_data} icpData={sessionData?.icp_data} valuePropData={sessionData?.value_prop_data} profileData={sessionData?.profile_data} onboardingData={sessionData?.onboarding_data} onSave={(d) => saveField("outreach_data", d)} onNext={() => goToStep(8)} onBack={() => goToStep(6)} />
           )}
           {step === 8 && (
-            <FinalScreen
-              sessionData={sessionData}
-              onDownloadPDF={() => generatePDF(sessionData)}
-              onRestart={handleStartFresh}
-            />
+            <FinalScreen sessionData={sessionData} onDownloadPDF={() => generatePDF(sessionData)} onRestart={handleStartFresh} />
           )}
         </AnimatePresence>
       </div>

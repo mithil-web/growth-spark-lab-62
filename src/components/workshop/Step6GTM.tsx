@@ -4,6 +4,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { callGemini } from "@/lib/workshop-store";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Star } from "lucide-react";
 
 interface Step6Props {
   data: any;
@@ -12,9 +13,10 @@ interface Step6Props {
   onboardingData: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export function Step6GTM({ data, icpData, valuePropData, onboardingData, onSave, onNext }: Step6Props) {
+export function Step6GTM({ data, icpData, valuePropData, onboardingData, onSave, onNext, onBack }: Step6Props) {
   const [result, setResult] = useState<any>(data?.result || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +45,7 @@ export function Step6GTM({ data, icpData, valuePropData, onboardingData, onSave,
 
 Inputs:
 - Core Offer: ${offer}
-- Industry: ${industry}
+- Industry: ${Array.isArray(industry) ? industry.join(", ") : industry}
 - ICPs:
 ${icpDetail}
 - Value Props:
@@ -57,11 +59,12 @@ Return a JSON object with these 4 sections:
 
 3. "partners": { "types": [{ "type": string, "angle": string, "offer": string, "snippet": string }] }
 
-4. "leadMagnets": [{ "name": string, "type": "Audit"|"Report"|"Workshop", "targetICP": string, "description": string, "format": string }]
+4. "leadMagnets": Array of 5 objects. Each must be interactive/results-oriented (NOT ebooks/PDFs/guides). Each: { "name": string, "type": "Audit"|"Report"|"Workshop"|"Calculator"|"Diagnostic", "targetICP": string, "includes": [2-3 bullet strings], "whyItWorks": string, "whenToUse": string, "effort": "Low"|"Medium"|"High", "impact": "Low"|"Medium"|"High", "bestStart": boolean (true for 1 only) }
 
 Rules:
 - Use "LinkedIn Connection Request", "LinkedIn DM", "Cold Email" terminology.
 - Short sentences. Scannable. No jargon.
+- Lead magnets must feel personalized, high-value, and actionable. No generic ebooks.
 - Return ONLY valid JSON (no markdown, no code blocks).`;
 
     try {
@@ -104,7 +107,6 @@ Rules:
 
       {result && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          {/* Module Tabs */}
           <div className="flex gap-1 mb-6 overflow-x-auto">
             {modules.map((m, idx) => (
               <button
@@ -190,15 +192,49 @@ Rules:
             </div>
           )}
 
-          {/* Lead Magnets */}
+          {/* Lead Magnets — Premium Cards */}
           {activeModule === 3 && result.leadMagnets && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {result.leadMagnets.map((lm: any, i: number) => (
-                <div key={i} className="glass-card p-5">
+                <div key={i} className={`glass-card p-5 relative ${lm.bestStart ? "border-primary" : ""}`}>
+                  {lm.bestStart && (
+                    <div className="absolute -top-2 left-4 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded">
+                      <Star className="w-3 h-3" /> Best Starting Point
+                    </div>
+                  )}
                   <span className="text-[10px] font-medium text-primary uppercase">{lm.type || lm.format}</span>
                   <h4 className="font-semibold text-sm mt-1 mb-2">{lm.name}</h4>
-                  <p className="text-xs text-muted-foreground mb-2">{lm.description || lm.whatItDoes}</p>
-                  <span className="text-xs text-muted-foreground">{lm.targetICP}</span>
+
+                  {lm.includes && (
+                    <ul className="space-y-1 mb-3">
+                      {lm.includes.map((item: string, j: number) => (
+                        <li key={j} className="text-xs text-muted-foreground flex gap-1.5">
+                          <span className="text-primary">•</span>{item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {lm.whyItWorks && (
+                    <div className="mb-2">
+                      <span className="text-[10px] text-muted-foreground uppercase">Why it works</span>
+                      <p className="text-xs text-muted-foreground">{lm.whyItWorks}</p>
+                    </div>
+                  )}
+
+                  {lm.whenToUse && (
+                    <div className="mb-2">
+                      <span className="text-[10px] text-muted-foreground uppercase">When to use</span>
+                      <p className="text-xs text-muted-foreground">{lm.whenToUse}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 mt-3 pt-2 border-t border-border">
+                    <span className="text-xs text-muted-foreground">Effort: <span className="text-foreground">{lm.effort || "Medium"}</span></span>
+                    <span className="text-xs text-muted-foreground">Impact: <span className="text-foreground">{lm.impact || "High"}</span></span>
+                  </div>
+
+                  <span className="text-xs text-muted-foreground mt-2 block">{lm.targetICP}</span>
                 </div>
               ))}
             </div>
@@ -209,7 +245,12 @@ Rules:
       )}
 
       {result && (
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex items-center justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          ) : <div />}
           <Button onClick={() => { onSave({ result }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step →
           </Button>

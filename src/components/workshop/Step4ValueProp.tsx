@@ -4,16 +4,17 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { callGemini } from "@/lib/workshop-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ArrowLeft } from "lucide-react";
 
 interface Step4Props {
   data: any;
   icpData: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export function Step4ValueProp({ data, icpData, onSave, onNext }: Step4Props) {
+export function Step4ValueProp({ data, icpData, onSave, onNext, onBack }: Step4Props) {
   const [result, setResult] = useState<any[]>(data?.result || []);
   const [positioning, setPositioning] = useState(data?.positioning || "");
   const [loading, setLoading] = useState(false);
@@ -113,7 +114,6 @@ Rules:
 
       {result.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          {/* Tabs */}
           <div className="flex gap-1 mb-6">
             {result.map((vp: any, idx: number) => (
               <button
@@ -137,14 +137,12 @@ Rules:
               transition={{ duration: 0.15 }}
               className="space-y-4"
             >
-              {/* Core Promise */}
               <div className="glass-card p-6 text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Core Promise</p>
                 <p className="text-xl font-bold accent-text">{result[activeTab]?.corePromise}</p>
                 <p className="text-sm text-muted-foreground mt-1">{result[activeTab]?.icpName}</p>
               </div>
 
-              {/* Before vs After */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="glass-card p-5">
                   <h4 className="text-xs font-semibold text-destructive uppercase tracking-wider mb-3">Before</h4>
@@ -164,7 +162,6 @@ Rules:
                 </div>
               </div>
 
-              {/* 3-Step System */}
               <div className="glass-card p-5">
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">3-Step System</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -180,7 +177,6 @@ Rules:
                 </div>
               </div>
 
-              {/* Why Others Fail / Why You Win */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="glass-card p-5">
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Why Others Fail</h4>
@@ -200,7 +196,6 @@ Rules:
                 </div>
               </div>
 
-              {/* Ready-to-Use Copy */}
               <div className="glass-card p-5">
                 <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-4">Ready-to-Use Copy</h4>
                 <div className="space-y-3">
@@ -230,7 +225,6 @@ Rules:
             </motion.div>
           </AnimatePresence>
 
-          {/* Positioning Statement */}
           {positioning && (
             <div className="glass-card p-5 mt-6 border-primary">
               <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Core Positioning Statement</h3>
@@ -243,7 +237,12 @@ Rules:
       )}
 
       {result.length > 0 && (
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex items-center justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          ) : <div />}
           <Button onClick={() => { onSave({ result, positioning }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step →
           </Button>

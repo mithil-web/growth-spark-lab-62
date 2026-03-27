@@ -3,16 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { MultiSelect } from "./MultiSelect";
+import { ArrowLeft } from "lucide-react";
 
 const INDUSTRIES = [
   "SaaS", "Fintech", "Healthtech", "Edtech", "E-commerce", "D2C", "Agencies",
   "Consulting", "Coaching", "Real Estate", "Manufacturing", "Logistics", "HR Tech",
   "Martech", "Legal", "Finance", "Healthcare", "Recruitment", "IT Services",
-  "AI / ML Startups", "B2B Services", "B2B SaaS", "Other"
+  "AI / ML Startups", "B2B Services", "B2B SaaS",
 ];
 
-const BUSINESS_TYPES = ["Service-based", "Product-based", "Hybrid", "Other"];
-const REVENUE_OPTIONS = ["Pre-revenue", "Less than $5K", "$5K to $20K", "$20K to $50K", "$50K+", "Other"];
+const BUSINESS_TYPES = ["Service-based", "Product-based", "Hybrid"];
+
+const REVENUE_OPTIONS = [
+  "₹0–5 Lakhs", "₹5–10 Lakhs", "₹10–25 Lakhs", "₹25–50 Lakhs",
+  "₹50 Lakhs–1 Cr", "₹1–2 Cr", "₹2–5 Cr", "₹5–10 Cr", "₹10 Cr+",
+];
 
 const GOAL_OPTIONS = [
   { label: "More leads", desc: "Generate more qualified prospects" },
@@ -21,24 +27,25 @@ const GOAL_OPTIONS = [
   { label: "All of the above", desc: "Full-stack growth" },
 ];
 
-const GEO_OPTIONS = ["India", "US", "UK", "Europe", "Southeast Asia", "Global", "Other"];
+const GEO_OPTIONS = ["India", "US", "UK", "Europe", "Southeast Asia", "Global"];
 
 interface Step1Props {
   data: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
+export function Step1Onboarding({ data, onSave, onNext, onBack }: Step1Props) {
   const [form, setForm] = useState({
     linkedinUrl: data?.linkedinUrl || "",
-    industry: data?.industry || "",
+    industry: data?.industry || [] as string[],
     industryOther: data?.industryOther || "",
-    businessType: data?.businessType || "",
+    businessType: data?.businessType || [] as string[],
     businessTypeOther: data?.businessTypeOther || "",
-    revenue: data?.revenue || "",
+    revenue: data?.revenue || [] as string[],
     revenueOther: data?.revenueOther || "",
-    goal: data?.goal || "",
+    goals: data?.goals || [] as string[],
     goalOther: data?.goalOther || "",
     geography: data?.geography || [] as string[],
     geographyOther: data?.geographyOther || "",
@@ -50,26 +57,27 @@ export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
     setErrors(p => ({ ...p, [key]: "" }));
   };
 
-  const toggleGeo = (g: string) => {
+  const toggleGoal = (g: string) => {
     setForm(p => ({
       ...p,
-      geography: p.geography.includes(g) ? p.geography.filter((x: string) => x !== g) : [...p.geography, g]
+      goals: p.goals.includes(g) ? p.goals.filter((x: string) => x !== g) : [...p.goals, g],
     }));
+    setErrors(p => ({ ...p, goals: "" }));
   };
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.linkedinUrl.trim()) errs.linkedinUrl = "LinkedIn URL is required";
-    if (!form.industry) errs.industry = "Industry is required";
-    if (form.industry === "Other" && !form.industryOther.trim()) errs.industryOther = "Please specify your industry";
-    if (!form.businessType) errs.businessType = "Business type is required";
-    if (form.businessType === "Other" && !form.businessTypeOther.trim()) errs.businessTypeOther = "Please specify your business type";
-    if (!form.revenue) errs.revenue = "Revenue is required";
-    if (form.revenue === "Other" && !form.revenueOther.trim()) errs.revenueOther = "Please specify your revenue";
-    if (!form.goal) errs.goal = "Primary goal is required";
-    if (form.goal === "Other" && !form.goalOther.trim()) errs.goalOther = "Please specify your goal";
+    if (form.industry.length === 0) errs.industry = "Select at least one industry";
+    if (form.industry.includes("Other") && !form.industryOther.trim()) errs.industryOther = "Please specify your industry";
+    if (form.businessType.length === 0) errs.businessType = "Select at least one business type";
+    if (form.businessType.includes("Other") && !form.businessTypeOther.trim()) errs.businessTypeOther = "Please specify";
+    if (form.revenue.length === 0) errs.revenue = "Select at least one revenue range";
+    if (form.revenue.includes("Other") && !form.revenueOther.trim()) errs.revenueOther = "Please specify";
+    if (form.goals.length === 0) errs.goals = "Select at least one goal";
+    if (form.goals.includes("Other") && !form.goalOther.trim()) errs.goalOther = "Please specify your goal";
     if (form.geography.length === 0) errs.geography = "Select at least one region";
-    if (form.geography.includes("Other") && !form.geographyOther.trim()) errs.geographyOther = "Please specify your region";
+    if (form.geography.includes("Other") && !form.geographyOther.trim()) errs.geographyOther = "Please specify";
     return errs;
   };
 
@@ -80,39 +88,12 @@ export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
     onNext();
   };
 
-  const SelectField = ({ label, field, options, otherField }: { label: string; field: string; options: string[]; otherField?: string }) => (
-    <div>
-      <Label className="text-sm text-muted-foreground">{label}</Label>
-      <select
-        value={(form as any)[field]}
-        onChange={(e) => update(field, e.target.value)}
-        className="w-full mt-1.5 h-10 px-3 rounded-md bg-secondary border border-border text-foreground text-sm focus:border-primary focus:outline-none transition-colors"
-      >
-        <option value="">Select...</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-      {errors[field] && <p className="text-destructive text-xs mt-1">{errors[field]}</p>}
-      {(form as any)[field] === "Other" && otherField && (
-        <div className="mt-2">
-          <Input
-            placeholder="Please specify"
-            value={(form as any)[otherField]}
-            onChange={(e) => update(otherField, e.target.value)}
-            className="bg-secondary border-border focus:border-primary"
-          />
-          {errors[otherField] && <p className="text-destructive text-xs mt-1">{errors[otherField]}</p>}
-        </div>
-      )}
-    </div>
-  );
-
-  // Summary for right panel
   const summaryItems = [
-    { label: "Industry", value: form.industry === "Other" ? form.industryOther : form.industry },
-    { label: "Business", value: form.businessType === "Other" ? form.businessTypeOther : form.businessType },
-    { label: "Revenue", value: form.revenue === "Other" ? form.revenueOther : form.revenue },
-    { label: "Goal", value: form.goal === "Other" ? form.goalOther : form.goal },
-    { label: "Markets", value: form.geography.join(", ") },
+    { label: "Industry", value: form.industry.filter((x: string) => x !== "Other").concat(form.industryOther ? form.industryOther.split(",").map((s: string) => s.trim()) : []).join(", ") },
+    { label: "Business", value: form.businessType.filter((x: string) => x !== "Other").join(", ") },
+    { label: "Revenue", value: form.revenue.filter((x: string) => x !== "Other").join(", ") },
+    { label: "Goals", value: form.goals.filter((x: string) => x !== "Other").join(", ") },
+    { label: "Markets", value: form.geography.filter((x: string) => x !== "Other").join(", ") },
   ].filter(s => s.value);
 
   return (
@@ -121,14 +102,13 @@ export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
       <p className="text-muted-foreground mb-8 text-sm">This helps us personalise your strategy</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        {/* LEFT — Inputs */}
         <div className="space-y-6">
           {/* Business Basics */}
           <div className="glass-card p-6">
             <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider">Business Basics</h3>
             <div className="space-y-4">
               <div>
-                <Label className="text-sm text-muted-foreground">LinkedIn Profile URL</Label>
+                <Label className="text-xs text-muted-foreground">LinkedIn Profile URL</Label>
                 <Input
                   value={form.linkedinUrl}
                   onChange={(e) => update("linkedinUrl", e.target.value)}
@@ -137,37 +117,58 @@ export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
                 />
                 {errors.linkedinUrl && <p className="text-destructive text-xs mt-1">{errors.linkedinUrl}</p>}
               </div>
-              <SelectField label="Industry" field="industry" options={INDUSTRIES} otherField="industryOther" />
-              <SelectField label="Business Type" field="businessType" options={BUSINESS_TYPES} otherField="businessTypeOther" />
-              <SelectField label="Current Monthly Revenue" field="revenue" options={REVENUE_OPTIONS} otherField="revenueOther" />
+              <MultiSelect label="Industry" options={INDUSTRIES} selected={form.industry} onChange={v => update("industry", v)}
+                hasOther otherValue={form.industryOther} onOtherChange={v => update("industryOther", v)} />
+              {errors.industry && <p className="text-destructive text-xs mt-1">{errors.industry}</p>}
+              {errors.industryOther && <p className="text-destructive text-xs mt-1">{errors.industryOther}</p>}
+
+              <MultiSelect label="Business Type" options={BUSINESS_TYPES} selected={form.businessType} onChange={v => update("businessType", v)}
+                hasOther otherValue={form.businessTypeOther} onOtherChange={v => update("businessTypeOther", v)} searchable={false} />
+              {errors.businessType && <p className="text-destructive text-xs mt-1">{errors.businessType}</p>}
+
+              <MultiSelect label="Monthly Revenue" options={REVENUE_OPTIONS} selected={form.revenue} onChange={v => update("revenue", v)}
+                hasOther otherValue={form.revenueOther} onOtherChange={v => update("revenueOther", v)} />
+              {errors.revenue && <p className="text-destructive text-xs mt-1">{errors.revenue}</p>}
             </div>
           </div>
 
           {/* Growth Objective */}
           <div className="glass-card p-6">
             <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider">Growth Objective</h3>
-            <Label className="text-sm text-muted-foreground">Primary Goal</Label>
+            <Label className="text-xs text-muted-foreground">Primary Goals</Label>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {GOAL_OPTIONS.map(g => (
                 <button
                   key={g.label}
                   type="button"
-                  onClick={() => update("goal", g.label)}
+                  onClick={() => toggleGoal(g.label)}
                   className={`text-left p-4 rounded-lg border transition-all ${
-                    form.goal === g.label
+                    form.goals.includes(g.label)
                       ? "tag-selected border-primary"
                       : "bg-secondary border-border hover:border-muted-foreground"
                   }`}
                 >
-                  <div className={`text-sm font-medium ${form.goal === g.label ? "text-primary" : "text-foreground"}`}>{g.label}</div>
+                  <div className={`text-sm font-medium ${form.goals.includes(g.label) ? "text-primary" : "text-foreground"}`}>{g.label}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">{g.desc}</div>
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => toggleGoal("Other")}
+                className={`text-left p-4 rounded-lg border transition-all ${
+                  form.goals.includes("Other")
+                    ? "tag-selected border-primary"
+                    : "bg-secondary border-border hover:border-muted-foreground"
+                }`}
+              >
+                <div className={`text-sm font-medium ${form.goals.includes("Other") ? "text-primary" : "text-foreground"}`}>Other</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Custom goal</div>
+              </button>
             </div>
-            {errors.goal && <p className="text-destructive text-xs mt-2">{errors.goal}</p>}
-            {form.goal === "Other" && (
+            {errors.goals && <p className="text-destructive text-xs mt-2">{errors.goals}</p>}
+            {form.goals.includes("Other") && (
               <div className="mt-3">
-                <Input placeholder="Please specify your goal" value={form.goalOther} onChange={(e) => update("goalOther", e.target.value)} className="bg-secondary border-border focus:border-primary" />
+                <Input placeholder="Enter custom goals (comma separated)" value={form.goalOther} onChange={(e) => update("goalOther", e.target.value)} className="bg-secondary border-border focus:border-primary" />
                 {errors.goalOther && <p className="text-destructive text-xs mt-1">{errors.goalOther}</p>}
               </div>
             )}
@@ -176,30 +177,9 @@ export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
           {/* Market Focus */}
           <div className="glass-card p-6">
             <h3 className="text-sm font-semibold text-primary mb-4 uppercase tracking-wider">Market Focus</h3>
-            <Label className="text-sm text-muted-foreground">Target Geography</Label>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {GEO_OPTIONS.map(g => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => toggleGeo(g)}
-                  className={`text-sm px-4 py-2 rounded-md border transition-all ${
-                    form.geography.includes(g)
-                      ? "tag-selected border-primary"
-                      : "bg-secondary border-border hover:border-muted-foreground text-muted-foreground"
-                  }`}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
+            <MultiSelect label="Target Geography" options={GEO_OPTIONS} selected={form.geography} onChange={v => update("geography", v)}
+              hasOther otherValue={form.geographyOther} onOtherChange={v => update("geographyOther", v)} searchable={false} />
             {errors.geography && <p className="text-destructive text-xs mt-2">{errors.geography}</p>}
-            {form.geography.includes("Other") && (
-              <div className="mt-3">
-                <Input placeholder="Please specify your region" value={form.geographyOther} onChange={(e) => update("geographyOther", e.target.value)} className="bg-secondary border-border focus:border-primary" />
-                {errors.geographyOther && <p className="text-destructive text-xs mt-1">{errors.geographyOther}</p>}
-              </div>
-            )}
           </div>
         </div>
 
@@ -228,7 +208,12 @@ export function Step1Onboarding({ data, onSave, onNext }: Step1Props) {
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex items-center justify-between">
+        {onBack ? (
+          <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+        ) : <div />}
         <Button onClick={handleNext} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
           Next Step →
         </Button>

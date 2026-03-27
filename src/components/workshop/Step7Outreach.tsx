@@ -4,14 +4,44 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { callGemini } from "@/lib/workshop-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, ChevronDown, AlertTriangle, Video, Clock } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
 
 const ANGLES = ["Authority", "ROI", "Pain-led", "Contrarian", "Curiosity", "Offer-led"];
+
+const SEQUENCES = [
+  {
+    name: "Curiosity-led",
+    steps: [
+      { touch: 1, type: "Connection", intent: "Pattern-interrupt curiosity" },
+      { touch: 2, type: "Follow-up", intent: "Curiosity hook" },
+      { touch: 3, type: "Follow-up", intent: "Insight or observation" },
+      { touch: 4, type: "Follow-up", intent: "Soft CTA" },
+    ],
+  },
+  {
+    name: "Insight-led",
+    steps: [
+      { touch: 1, type: "Connection", intent: "Relevant observation" },
+      { touch: 2, type: "Follow-up", intent: "Industry insight" },
+      { touch: 3, type: "Follow-up", intent: "Case study proof" },
+      { touch: 4, type: "Follow-up", intent: "Direct CTA" },
+    ],
+  },
+  {
+    name: "Multi-format",
+    steps: [
+      { touch: 1, type: "Connection", intent: "Personalized observation" },
+      { touch: 2, type: "Follow-up", intent: "Value-add content" },
+      { touch: 3, type: "Loom / Voice", intent: "Personalized walkthrough" },
+      { touch: 4, type: "Follow-up", intent: "Lead magnet offer" },
+    ],
+  },
+];
 
 interface Step7Props {
   data: any;
@@ -21,9 +51,10 @@ interface Step7Props {
   onboardingData: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export function Step7Outreach({ data, icpData, valuePropData, profileData, onboardingData, onSave, onNext }: Step7Props) {
+export function Step7Outreach({ data, icpData, valuePropData, profileData, onboardingData, onSave, onNext, onBack }: Step7Props) {
   const [angle, setAngle] = useState(data?.angle || "Authority");
   const [result, setResult] = useState<any>(data?.result || null);
   const [loading, setLoading] = useState(false);
@@ -55,7 +86,7 @@ export function Step7Outreach({ data, icpData, valuePropData, profileData, onboa
 - Client: ${userName}
 - Offer: ${offer}
 - Value Prop: ${topVP}
-- Industry: ${industry}
+- Industry: ${Array.isArray(industry) ? industry.join(", ") : industry}
 - Selected Angle: ${angle}
 - ICPs:
 ${icpSummary}
@@ -77,7 +108,7 @@ For EACH of the 3 ICPs, generate a strategic playbook with these sections:
 
 4. "followUpSystem": { "totalTouches": number (5-8), "delayDays": [array of numbers], "escalationLogic": string, "toneEvolution": string }
 
-5. "messageDistribution": [array of objects with "touch" (number) and "type" (string, e.g. "Curiosity", "Compliment", "Insight", "Case study", "CTA")]
+5. "messageDistribution": [array of objects with "touch" (number) and "type" (string)]
 
 6. "whatToAvoid": [4-5 specific mistakes for this ICP]
 
@@ -146,9 +177,9 @@ Return ONLY valid JSON (no markdown):
       {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
       {playbooks.length > 0 && !loading && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           {/* ICP Tabs */}
-          <div className="flex gap-1 mb-6">
+          <div className="flex gap-1">
             {playbooks.map((pb: any, idx: number) => (
               <button
                 key={idx}
@@ -233,6 +264,16 @@ Return ONLY valid JSON (no markdown):
                     {/* Touchpoint Strategy */}
                     <div className="glass-card p-5">
                       <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">💬 Touchpoint Strategy</h3>
+
+                      {/* Warning */}
+                      <div className="bg-primary/10 border border-primary/20 rounded-md p-3 mb-4 flex gap-2">
+                        <AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">Don't use all touchpoints in one sequence</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">Test combinations: Text only → Text + Loom → Text + case study. Too many elements = spam = lower replies.</p>
+                        </div>
+                      </div>
+
                       <div className="space-y-3">
                         {pb.touchpointStrategy && Object.entries(pb.touchpointStrategy).map(([key, val]: [string, any]) => {
                           if (!val) return null;
@@ -271,6 +312,54 @@ Return ONLY valid JSON (no markdown):
                             </Collapsible>
                           );
                         })}
+                      </div>
+                    </div>
+
+                    {/* Delay System */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                        <Clock className="w-3.5 h-3.5 inline mr-1" />
+                        Delay System
+                      </h3>
+                      <div className="bg-secondary p-3 rounded-md mb-3">
+                        <p className="text-sm font-medium">2–5 day gaps between messages</p>
+                        <p className="text-xs text-muted-foreground mt-1">Too fast → flagged as spam. Too slow → lose context.</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">High-ticket deals</span>
+                          <p className="text-sm mt-0.5">Longer gaps (4–5 days)</p>
+                        </div>
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">Warm leads</span>
+                          <p className="text-sm mt-0.5">Shorter gaps (2–3 days)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Loom Video Explanation */}
+                    <div className="glass-card p-5">
+                      <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-3">
+                        <Video className="w-3.5 h-3.5 inline mr-1" />
+                        Loom Video Guide
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">What it is</span>
+                          <p className="text-sm mt-0.5">1–3 min personalized screen recording walkthrough</p>
+                        </div>
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">Why it works</span>
+                          <p className="text-sm mt-0.5">Breaks pattern. Builds trust. Feels personal.</p>
+                        </div>
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">When to use</span>
+                          <p className="text-sm mt-0.5">After engagement. When insight is strong.</p>
+                        </div>
+                        <div className="bg-secondary p-3 rounded-md">
+                          <span className="text-xs text-muted-foreground">Tone</span>
+                          <p className="text-sm mt-0.5">Casual. Direct. Not overproduced.</p>
+                        </div>
                       </div>
                     </div>
 
@@ -330,11 +419,40 @@ Return ONLY valid JSON (no markdown):
               })()}
             </motion.div>
           </AnimatePresence>
+
+          {/* Sequences You Can Try */}
+          <div className="glass-card p-5">
+            <h3 className="text-xs font-semibold text-primary uppercase tracking-wider mb-4">🔁 Sequences You Can Try</h3>
+            <p className="text-xs text-muted-foreground mb-4">Intent only. No scripts. Test which combo works best for your ICP.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {SEQUENCES.map((seq, idx) => (
+                <div key={idx} className="bg-secondary p-4 rounded-md">
+                  <h4 className="text-sm font-semibold mb-3">{seq.name}</h4>
+                  <div className="space-y-2">
+                    {seq.steps.map((step, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold accent-bg shrink-0">{step.touch}</span>
+                        <div>
+                          <span className="text-xs font-medium">{step.type}</span>
+                          <p className="text-[10px] text-muted-foreground">{step.intent}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </motion.div>
       )}
 
       {playbooks.length > 0 && !loading && (
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex items-center justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          ) : <div />}
           <Button onClick={() => { onSave({ angle, result }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step → Finish & Download PDF
           </Button>

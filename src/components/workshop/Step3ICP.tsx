@@ -4,10 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { MultiSelect } from "./MultiSelect";
 import { callGemini } from "@/lib/workshop-store";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, Plus, X, Search } from "lucide-react";
+import { ChevronDown, ArrowLeft } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -18,16 +19,16 @@ const INDUSTRIES = [
   "SaaS", "Fintech", "Healthtech", "Edtech", "E-commerce", "D2C", "Agencies",
   "Consulting", "Coaching", "Real Estate", "Manufacturing", "Logistics", "HR Tech",
   "Martech", "Legal", "Finance", "Healthcare", "Recruitment", "IT Services",
-  "AI / ML Startups", "B2B Services", "B2B SaaS", "Other"
+  "AI / ML Startups", "B2B Services", "B2B SaaS",
 ];
 
 const ROLES = [
   "Founder / Co-Founder", "CEO / CXO", "Head of Growth", "Head of Sales",
   "Head of Marketing", "SDR / BDR Manager", "Enterprise Sales Leader",
-  "Partnerships Manager", "Operations Head", "Strategy Lead", "Other"
+  "Partnerships Manager", "Operations Head", "Strategy Lead",
 ];
 
-const SIZES = ["1–10", "10–50", "50–200", "200–500", "500–1000", "1000+", "Other"];
+const SIZES = ["1–10", "10–50", "50–200", "200–500", "500–1000", "1000+"];
 
 interface IcpInput {
   roles: string[];
@@ -39,84 +40,11 @@ interface Step3Props {
   data: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-function SearchableMultiSelect({ label, options, selected, onChange }: {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
-  const toggle = (o: string) => {
-    onChange(selected.includes(o) ? selected.filter(x => x !== o) : [...selected, o]);
-  };
-  const remove = (o: string) => onChange(selected.filter(x => x !== o));
-
-  return (
-    <div ref={ref} className="relative">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <div
-        onClick={() => setOpen(true)}
-        className="mt-1 min-h-[40px] flex flex-wrap gap-1.5 items-center p-2 rounded-md bg-secondary border border-border cursor-pointer hover:border-muted-foreground transition-colors"
-      >
-        {selected.length === 0 && <span className="text-sm text-muted-foreground">Select {label.toLowerCase()}...</span>}
-        {selected.map(s => (
-          <span key={s} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded tag-selected border">
-            {s}
-            <button type="button" onClick={(e) => { e.stopPropagation(); remove(s); }} className="hover:text-foreground">
-              <X className="w-3 h-3" />
-            </button>
-          </span>
-        ))}
-      </div>
-      {open && (
-        <div className="absolute z-20 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-56 overflow-hidden">
-          <div className="p-2 border-b border-border flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search..."
-              className="bg-transparent text-sm text-foreground outline-none w-full placeholder:text-muted-foreground"
-              autoFocus
-            />
-          </div>
-          <div className="overflow-y-auto max-h-44">
-            {filtered.map(o => (
-              <button
-                key={o}
-                type="button"
-                onClick={() => toggle(o)}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                  selected.includes(o) ? "text-primary bg-primary/10" : "text-foreground hover:bg-secondary"
-                }`}
-              >
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function Step3ICP({ data, onSave, onNext }: Step3Props) {
+export function Step3ICP({ data, onSave, onNext, onBack }: Step3Props) {
   const emptyIcp = (): IcpInput => ({ roles: [], sizes: [], industries: [] });
-  const [icpCount, setIcpCount] = useState(data?.inputs?.length || 3);
   const [icps, setIcps] = useState<IcpInput[]>(() => {
     const inputs = data?.inputs || [];
     while (inputs.length < 3) inputs.push(emptyIcp());
@@ -136,7 +64,7 @@ export function Step3ICP({ data, onSave, onNext }: Step3Props) {
 
   const generate = async () => {
     if (!offer.trim()) { setError("Please enter your core offer"); return; }
-    for (let i = 0; i < icpCount; i++) {
+    for (let i = 0; i < 3; i++) {
       if (icps[i].roles.length === 0) { setError(`ICP ${i + 1}: select at least one role`); return; }
       if (icps[i].sizes.length === 0) { setError(`ICP ${i + 1}: select at least one company size`); return; }
       if (icps[i].industries.length === 0) { setError(`ICP ${i + 1}: select at least one industry`); return; }
@@ -148,7 +76,7 @@ export function Step3ICP({ data, onSave, onNext }: Step3Props) {
     const prompt = `You are an expert B2B Growth Strategist. Generate 3 deep, strategic Ideal Customer Profiles (ICPs).
 
 Core Offer: ${offer}
-${Array.from({ length: icpCount }, (_, i) => `ICP ${i + 1} Inputs: Roles: ${icps[i].roles.join(", ")}, Company Sizes: ${icps[i].sizes.join(", ")}, Industries: ${icps[i].industries.join(", ")}`).join("\n")}
+${Array.from({ length: 3 }, (_, i) => `ICP ${i + 1} Inputs: Roles: ${icps[i].roles.join(", ")}, Company Sizes: ${icps[i].sizes.join(", ")}, Industries: ${icps[i].industries.join(", ")}`).join("\n")}
 
 For EACH ICP generate:
 1. ICP Name (descriptive)
@@ -191,7 +119,6 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
     }
   };
 
-  // Display: Tabbed ICP output
   const [activeTab, setActiveTab] = useState(0);
 
   const sections = [
@@ -210,9 +137,8 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
       <h2 className="text-2xl font-bold mb-1">Define Your <span className="accent-text">Ideal Customers</span></h2>
       <p className="text-muted-foreground mb-8 text-sm">Build 3 detailed ICPs for your business</p>
 
-      {/* Accordion ICP Inputs */}
       <div className="space-y-3 mb-6">
-        {Array.from({ length: icpCount }, (_, idx) => (
+        {Array.from({ length: 3 }, (_, idx) => (
           <Collapsible key={idx} open={openIcp === idx} onOpenChange={(open) => open && setOpenIcp(idx)}>
             <CollapsibleTrigger className="w-full">
               <div className={`glass-card p-4 flex items-center justify-between cursor-pointer transition-colors ${openIcp === idx ? "border-primary" : ""}`}>
@@ -232,9 +158,9 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
             </CollapsibleTrigger>
             <CollapsibleContent>
               <div className="glass-card p-5 mt-1 space-y-4 border-primary">
-                <SearchableMultiSelect label="Roles" options={ROLES} selected={icps[idx].roles} onChange={v => updateIcp(idx, "roles", v)} />
-                <SearchableMultiSelect label="Company Size" options={SIZES} selected={icps[idx].sizes} onChange={v => updateIcp(idx, "sizes", v)} />
-                <SearchableMultiSelect label="Industries" options={INDUSTRIES} selected={icps[idx].industries} onChange={v => updateIcp(idx, "industries", v)} />
+                <MultiSelect label="Roles" options={ROLES} selected={icps[idx].roles} onChange={v => updateIcp(idx, "roles", v)} hasOther />
+                <MultiSelect label="Company Size" options={SIZES} selected={icps[idx].sizes} onChange={v => updateIcp(idx, "sizes", v)} hasOther searchable={false} />
+                <MultiSelect label="Industries" options={INDUSTRIES} selected={icps[idx].industries} onChange={v => updateIcp(idx, "industries", v)} hasOther />
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -256,10 +182,8 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
 
       {loading && <LoadingSpinner text="Generating your ICPs... this takes ~20 seconds" />}
 
-      {/* ICP OUTPUT — Tabbed */}
       {result.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8">
-          {/* Tabs */}
           <div className="flex gap-1 mb-4">
             {result.map((icp: any, idx: number) => (
               <button
@@ -274,7 +198,6 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
             ))}
           </div>
 
-          {/* Active ICP Content */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -285,29 +208,24 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
             >
               <div className="glass-card p-6">
                 <h3 className="text-lg font-bold accent-text mb-6">{result[activeTab]?.name}</h3>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {sections.map(s => {
                     const val = result[activeTab]?.[s.key];
                     if (!val) return null;
 
-                    // Pain points get special highlight treatment
                     if (s.key === "painPoints" && Array.isArray(val)) {
                       return (
                         <div key={s.key} className="md:col-span-2">
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{s.icon} {s.label}</h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {val.map((item: string, i: number) => (
-                              <div key={i} className="bg-secondary p-3 rounded-md text-sm text-foreground border-l-2 border-primary">
-                                {item}
-                              </div>
+                              <div key={i} className="bg-secondary p-3 rounded-md text-sm text-foreground border-l-2 border-primary">{item}</div>
                             ))}
                           </div>
                         </div>
                       );
                     }
 
-                    // Objections: collapsible
                     if (s.key === "objections") {
                       return (
                         <div key={s.key} className="md:col-span-2">
@@ -330,7 +248,6 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
                       );
                     }
 
-                    // Where they hang out: tags
                     if (s.key === "whereTheyHangOut" && Array.isArray(val)) {
                       return (
                         <div key={s.key}>
@@ -344,14 +261,11 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
                       );
                     }
 
-                    // Positioning: highlight box
                     if (s.key === "howToPosition") {
                       return (
                         <div key={s.key} className="md:col-span-2">
                           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{s.icon} {s.label}</h4>
-                          <div className="bg-primary/10 border border-primary/30 p-4 rounded-md text-sm text-foreground">
-                            {val}
-                          </div>
+                          <div className="bg-primary/10 border border-primary/30 p-4 rounded-md text-sm text-foreground">{val}</div>
                         </div>
                       );
                     }
@@ -389,7 +303,12 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
       )}
 
       {result.length > 0 && (
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex items-center justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          ) : <div />}
           <Button onClick={() => { onSave({ inputs: icps, offer, result, niche }); onNext(); }} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step →
           </Button>
