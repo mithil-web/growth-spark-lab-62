@@ -182,7 +182,7 @@ For EACH of the 3 target customer types, generate a strategic playbook with thes
 
 1. "icpContext": { "who": string, "mindset": string, "careAbout": [3 strings], "ignore": [3 strings] }
 
-2. "strategicApproach": { "bestAngle": string, "positioningStyle": one of "Peer"|"Expert"|"Challenger"|"Insider", "whatNotToDo": [3 strings] }
+2. "strategicApproach": { "bestAngle": string, "positioningStyle": one of "Peer"|"Expert"|"Challenger"|"Insider", "positioningDetail": { "whatItMeans": string (2 sentences explaining the style in plain English), "howToShowUp": [2-3 strings, specific behaviours or tactics], "whatToAvoid": [1-2 strings], "exampleOpener": string (example opening line showing this style in action) }, "whatNotToDo": [3 strings] }
 
 3. "personalisationTips": [3 strings, each a specific tip on how to make messages feel personally written for each person rather than generic]
 
