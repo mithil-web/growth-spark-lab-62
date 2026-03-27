@@ -5,7 +5,7 @@ const STEP_NAMES = [
   "Basics",
   "Profile Optimiser",
   "ICP Builder",
-  "Value Propositions",
+  "Value Proposition",
   "Website Builder",
   "GTM Strategy",
   "Outreach Playbook",
