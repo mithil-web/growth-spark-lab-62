@@ -93,6 +93,8 @@ export function Step2Profile({ data, onSave, onNext, onBack }: Step2Props) {
 
 ${NO_JARGON_RULE}
 
+${PERSONALISATION_RULE}
+
 Analyse and optimise this LinkedIn profile:
 - Current Headline: ${form.headline}
 - About Section: ${form.about}
