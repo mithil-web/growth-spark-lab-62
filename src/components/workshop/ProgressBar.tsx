@@ -8,7 +8,7 @@ const stepLabels = [
   "Onboarding",
   "Profile Optimiser",
   "ICP Builder",
-  "Value Propositions",
+  "Value Proposition",
   "Website Builder",
   "GTM Strategy",
   "Outreach Playbook",
@@ -32,7 +32,7 @@ export function ProgressBar({ currentStep, totalSteps }: ProgressBarProps) {
             <img
               src="/myntmore-logo.png"
               alt="Myntmore"
-              className="h-8"
+              className="h-12 sm:h-14"
               onError={(e) => {
                 const target = e.currentTarget;
                 target.style.display = "none";

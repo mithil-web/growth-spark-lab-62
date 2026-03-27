@@ -45,7 +45,7 @@ export function Step4ValueProp({ data, icpData, profileData, onSave, onNext, onB
       `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).join(", ")}`
     ).join("\n");
 
-    const prompt = `You are a senior B2B strategist. Generate structured Value Propositions for each of these 3 target customer types:
+    const prompt = `You are a senior strategist. Generate structured Value Propositions for each of these 3 target customer types:
 
 ${NO_JARGON_RULE}
 
@@ -205,12 +205,18 @@ Rules:
                     Core Angle
                     <InfoTooltip text="The single strongest hook to lead with when talking to this customer type: Authority, ROI, Speed, or Trust" />
                   </h4>
-                  <p className="text-sm text-muted-foreground">{result[activeTab].coreAngle}</p>
+                  <p className="text-sm font-semibold accent-text">{typeof result[activeTab].coreAngle === 'string' ? result[activeTab].coreAngle.split(':')[0] || result[activeTab].coreAngle : result[activeTab].coreAngle}</p>
+                  {typeof result[activeTab].coreAngle === 'string' && result[activeTab].coreAngle.includes(':') && (
+                    <div className="mt-2 bg-secondary p-3 rounded-md">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">Why this angle works</p>
+                      <p className="text-sm text-muted-foreground">{result[activeTab].coreAngle.split(':').slice(1).join(':').trim()}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               <div className="glass-card p-5">
-                <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-4">Ready-to-Use Copy</h4>
+                <h4 className="text-xs font-medium text-primary uppercase tracking-wider mb-4">Strategy Behind Your Content Creation</h4>
                 <div className="space-y-3">
                   <div className="bg-secondary p-3 rounded-md flex items-start justify-between">
                     <div>

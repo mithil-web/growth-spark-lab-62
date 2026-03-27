@@ -89,7 +89,7 @@ export function Step2Profile({ data, onSave, onNext, onBack }: Step2Props) {
     setLoading(true);
     setResult(null);
 
-    const prompt = `You are an expert LinkedIn Profile Strategist specialising in B2B Lead Generation.
+    const prompt = `You are an expert LinkedIn Profile Strategist specialising in lead generation.
 
 ${NO_JARGON_RULE}
 
@@ -251,6 +251,23 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
 
       {result && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4">
+          {/* Overall Clarity Score */}
+          {result.scoreBreakdown && (
+            <div className="glass-card p-6 text-center">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Overall Clarity Score</p>
+              <div className="text-5xl font-extrabold accent-text">
+                {Math.round(
+                  (Math.min(result.scoreBreakdown.proof?.score || 0, 20) +
+                   Math.min(result.scoreBreakdown.clarity?.score || 0, 20) +
+                   Math.min(result.scoreBreakdown.execution?.score || 0, 20) +
+                   Math.min(result.scoreBreakdown.specificity?.score || 0, 20) +
+                   Math.min(result.scoreBreakdown.differentiation?.score || 0, 20))
+                )}/100
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Average of Proof, Clarity, Execution, Specificity, Differentiation</p>
+            </div>
+          )}
+
           <div className="glass-card p-6 text-center">
             <div className="text-5xl font-extrabold accent-text">{result.finalScore}/100</div>
             <p className="text-lg font-semibold mt-1">{result.scoreMeaning}</p>
@@ -321,7 +338,7 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
 
           <div className="glass-card p-6">
             <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              Generated Headlines
+              Optimised Headlines
               <InfoTooltip text="AI-crafted headline alternatives using different frameworks: outcome-driven, authority-driven, and benefit-driven" />
             </h3>
             {result.headlines?.map((h: string, i: number) => (

@@ -65,6 +65,26 @@ const FOLLOW_UP_PROMPTS = [
     description: "Optimises loading performance for better user experience",
     prompt: "Optimise the entire website for page speed: 1) Lazy-load all images below the fold using loading='lazy'. 2) Use next-gen image formats (WebP) where possible. 3) Minimise CSS by removing unused styles. 4) Add font-display: swap to all font imports. 5) Defer non-critical JavaScript. 6) Compress all assets. 7) Add preconnect hints for external resources. 8) Ensure the Largest Contentful Paint (LCP) element loads within 2.5 seconds.",
   },
+  {
+    label: "📊 ROI Calculator",
+    description: "Adds an interactive ROI calculator to show prospects the value of your service",
+    prompt: "Add an interactive ROI Calculator section to the website. It should let users input their current metrics (e.g. monthly leads, conversion rate, average deal size) and calculate projected results after using the service. Display results dynamically with clear before/after numbers, percentage improvement, and projected revenue gain. Style it as a prominent section with a dark card background, clear input fields, and a bold results display. Make it fully responsive.",
+  },
+  {
+    label: "💵 Cost Savings Calculator",
+    description: "Shows prospects how much they save compared to hiring or alternatives",
+    prompt: "Add a Cost Savings Calculator section. Let users input: cost of hiring in-house (salary + benefits), cost of current agency or freelancer, number of hours spent on this task per week. Calculate and display: annual savings with your service, time saved per month, cost per result comparison. Show a clear visual comparison table or chart. Include a CTA below the results: 'See how much you could save. Book a call.'",
+  },
+  {
+    label: "📈 Growth Projection Tool",
+    description: "Visualises expected growth trajectory based on user inputs",
+    prompt: "Add a Growth Projection Tool section. Let users input: current monthly revenue or leads, desired growth rate, timeline (3, 6, or 12 months). Generate and display a simple line chart showing projected growth month-by-month. Include milestone markers at key points. Add context text explaining assumptions. Include a CTA: 'Want to hit these numbers? Let us show you how.' Style with brand colors and make fully responsive.",
+  },
+  {
+    label: "✅ Lead Qualification Quiz",
+    description: "Adds an interactive quiz that qualifies visitors and captures leads",
+    prompt: "Add a Lead Qualification Quiz section with 5-7 multiple choice questions. Questions should assess: company size, current challenges, budget range, timeline, and goals. At the end, show a personalised result (e.g. 'You are a great fit for our Growth plan'). Include a lead capture form (name, email) before revealing results. Display a progress bar during the quiz. Style as a full-width section with one question per screen and smooth transitions.",
+  },
 ];
 
 const GENERAL_FAQS = [
@@ -154,13 +174,21 @@ export function Step5Website({ data, icpData, valuePropData, profileData, onSave
       ? "\n\nIMPORTANT: A design reference image has been provided. Use it for STRUCTURE and LAYOUT only. Do NOT copy colors from the reference. Use ONLY the brand colors specified above."
       : "";
 
-    const prompt = `You are a world-class conversion rate optimisation expert and B2B web designer.
+    const companyName = profileData?.company || form.brandName;
+    const isCompany = companyName && companyName.toLowerCase() !== (profileData?.role || "").toLowerCase();
+    const toneInstruction = isCompany
+      ? `TONE: This is a COMPANY website for "${companyName}". Use "We" instead of "I". Include Services, Offerings, and Team positioning. Write in a professional company tone, not a personal brand tone.`
+      : `TONE: This is a personal brand website. Use "I" where appropriate. Focus on the individual's expertise and authority.`;
+
+    const prompt = `You are a world-class conversion rate optimisation expert and web designer.
 
 ${NO_JARGON_RULE}
 
 ${PERSONALISATION_RULE}
 
-COLOUR OVERRIDE (MANDATORY): The ONLY colours to use in this website are: Primary: ${form.primaryColor}, Secondary: ${form.secondaryColor}. Do not use yellow (#FFC947) or black (#000000) unless those are the user's selected colours. Apply primary colour to: CTA buttons, headings, highlighted text. Apply secondary colour to: background, cards, section fills. CSS variables must be: --primary: ${form.primaryColor}; --secondary: ${form.secondaryColor};
+COLOUR OVERRIDE (MANDATORY): The ONLY colours to use in this website are: Primary: ${form.primaryColor}, Secondary: ${form.secondaryColor}. Do not use yellow (#FFC947) or black (#000000) unless those are the user's selected colours. Apply primary colour to: CTA buttons, headings, highlighted text, links, and accent elements. Apply secondary colour to: background, cards, section fills, and supporting areas. CSS variables must be: --primary: ${form.primaryColor}; --secondary: ${form.secondaryColor}; Strictly use the provided colour palette. Do not introduce new colours. Ensure contrast is maintained and visual hierarchy is clear across all sections.
+
+${toneInstruction}
 
 IMPORTANT: The website MUST include a sticky navigation header at the top of every page. The header must contain: the brand logo or name on the left, navigation links in the centre (e.g. About, Services, Results, FAQ, Contact), and a CTA button on the right (e.g. 'Book a Call'). The header must be visible at all times as the user scrolls.
 
@@ -168,6 +196,7 @@ Generate a comprehensive, ready-to-paste prompt for building a high-converting l
 
 Inputs:
 - Brand Name: ${form.brandName}
+- Company: ${companyName}
 - Primary Colour: ${form.primaryColor}
 - Secondary Colour: ${form.secondaryColor}
 - Core Offer: ${offer}
