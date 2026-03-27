@@ -389,7 +389,7 @@ Rules:
             </motion.div>
           </AnimatePresence>
 
-          <Button onClick={generate} variant="ghost" className="w-full mt-6 text-muted-foreground">Regenerate</Button>
+          <Button onClick={() => generate(false)} disabled={loading} variant="ghost" className="w-full mt-6 text-muted-foreground">Regenerate</Button>
         </motion.div>
       )}
 
