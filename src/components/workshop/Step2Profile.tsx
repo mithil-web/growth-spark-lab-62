@@ -51,7 +51,20 @@ export function Step2Profile({ data, onSave, onNext, onBack }: Step2Props) {
   const [result, setResult] = useState<any>(data?.result || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const copyText = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const CopyBtn = ({ text, id, label }: { text: string; id: string; label?: string }) => (
+    <button onClick={() => copyText(text, id)} className="mt-2 flex items-center gap-1 text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+      {copiedField === id ? <><Check className="w-3 h-3 text-emerald-400" /> Copied!</> : <><Copy className="w-3 h-3" /> {label || "Copy"}</>}
+    </button>
+  );
 
   const update = (k: string, v: any) => setForm(p => ({ ...p, [k]: v }));
 
