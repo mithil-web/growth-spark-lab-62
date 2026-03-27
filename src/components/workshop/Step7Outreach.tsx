@@ -502,26 +502,6 @@ Return ONLY valid JSON (no markdown):
             </div>
           </div>
 
-          {/* Tools to Use */}
-          <div className="glass-card p-5">
-            <h3 className="text-xs font-medium text-primary uppercase tracking-wider mb-4">
-              <Wrench className="w-3.5 h-3.5 inline mr-1" /> Tools to Use
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {TOOLS.map((tool, idx) => (
-                <div key={idx} className="bg-secondary p-4 rounded-md">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-bold accent-text">{tool.name}</h4>
-                    <a href={tool.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{tool.desc}</p>
-                  {tool.example && <p className="text-xs text-foreground mt-2 italic bg-card p-2 rounded">"{tool.example}"</p>}
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* Message Rules */}
           <div className="glass-card p-5">
