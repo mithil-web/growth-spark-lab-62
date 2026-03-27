@@ -1,7 +1,28 @@
 import jsPDF from "jspdf";
 import { sanitizeAIText } from "./sanitize";
 import { MYNTMORE_NOTION_LINK } from "./constants";
-import myntmoreLogo from "@/assets/myntmore-logo.png";
+import myntmoreLogo from "@/assets/myntmore-full-logo.png";
+
+let cachedLogoImg: HTMLImageElement | null = null;
+let cachedLogoRatio = 1;
+
+async function loadLogo(): Promise<boolean> {
+  if (cachedLogoImg) return true;
+  try {
+    const img = new Image();
+    img.src = myntmoreLogo;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject();
+      setTimeout(reject, 3000);
+    });
+    cachedLogoImg = img;
+    cachedLogoRatio = img.height / img.width;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const LINKS = {
   linkedin: "https://www.linkedin.com/in/tejasjhaveri",
@@ -25,6 +46,12 @@ const PX_TO_PT = 0.75;
 const PAGE_MARGIN = MARGIN * PX_TO_PT; // ~30pt
 
 function addHeader(doc: jsPDF) {
+  // Add logo top-left on every page
+  if (cachedLogoImg) {
+    const logoW = 28;
+    const logoH = cachedLogoRatio * logoW;
+    doc.addImage(cachedLogoImg, "PNG", PAGE_MARGIN, 6, logoW, logoH);
+  }
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
   const w = doc.internal.pageSize.getWidth();
@@ -129,22 +156,14 @@ export async function generatePDF(sessionData: any) {
   const maxW = w - PAGE_MARGIN * 2;
   const userName = sessionData?.user_name || "Attendee";
 
-  // Load logo
-  let logoLoaded = false;
-  try {
-    const img = new Image();
-    img.src = myntmoreLogo;
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject();
-      setTimeout(reject, 3000);
-    });
-    const logoW = 30;
-    const logoH = (img.height / img.width) * logoW;
-    doc.addImage(img, "PNG", (w - logoW) / 2, 40, logoW, logoH);
-    logoLoaded = true;
-  } catch {
-    // Skip logo
+  // Load logo for all pages
+  const logoLoaded = await loadLogo();
+
+  // Cover page - centered large logo
+  if (cachedLogoImg) {
+    const logoW = 50;
+    const logoH = cachedLogoRatio * logoW;
+    doc.addImage(cachedLogoImg, "PNG", (w - logoW) / 2, 35, logoW, logoH);
   }
 
   // Cover page
