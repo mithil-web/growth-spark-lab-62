@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import { sanitizeAIText } from "./sanitize";
 import { MYNTMORE_NOTION_LINK } from "./constants";
+import myntmoreLogo from "@/assets/myntmore-logo.png";
 
 const LINKS = {
   linkedin: "https://www.linkedin.com/in/tejasjhaveri",
