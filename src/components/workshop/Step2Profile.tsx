@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { callGemini } from "@/lib/workshop-store";
 import { motion } from "framer-motion";
-import { Info } from "lucide-react";
+import { Info, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const TONES = ["Bold", "Professional", "Casual", "Witty", "Direct", "Empathetic", "Data-driven", "Other"];
@@ -31,9 +31,10 @@ interface Step2Props {
   data: any;
   onSave: (data: any) => void;
   onNext: () => void;
+  onBack?: () => void;
 }
 
-export function Step2Profile({ data, onSave, onNext }: Step2Props) {
+export function Step2Profile({ data, onSave, onNext, onBack }: Step2Props) {
   const [form, setForm] = useState({
     role: data?.role || "",
     company: data?.company || "",
@@ -89,6 +90,16 @@ Keyword Score (separate 0-100 score):
 - Related industry terms: up to 30 points
 - Action verbs showing results: up to 20 points
 - Credibility markers: up to 10 points
+
+ABOUT SECTION RULES (CRITICAL):
+The "aboutSection" field MUST be a minimum of 3 paragraphs.
+Each paragraph = 2-4 lines of text.
+Separate paragraphs with TWO newlines (\\n\\n).
+Structure:
+- Paragraph 1: Who they are + what they do + target audience
+- Paragraph 2: Differentiation + strengths + outcomes delivered
+- Paragraph 3: Positioning + credibility + authority tone
+Rules: No fluff. No repetition. No generic statements. Must feel LinkedIn-ready and website-ready.
 
 Return ONLY a valid JSON object (no markdown, no code blocks) with:
 {
@@ -198,14 +209,12 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
 
       {result && !result.raw && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4">
-          {/* Score */}
           <div className="glass-card p-6 text-center">
             <div className="text-5xl font-extrabold accent-text">{result.finalScore}/100</div>
             <p className="text-lg font-semibold mt-1">{result.scoreMeaning}</p>
             <p className="text-muted-foreground text-sm">{result.percentileRank}</p>
           </div>
 
-          {/* Tiers */}
           <div className="glass-card p-6">
             <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">Profile Tiers</h3>
             <div className="space-y-1.5">
@@ -218,7 +227,6 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
             </div>
           </div>
 
-          {/* Score Breakdown */}
           <div className="glass-card p-6">
             <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm uppercase tracking-wider text-muted-foreground">
               Score Breakdown
@@ -258,7 +266,6 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
             </div>
           </div>
 
-          {/* What's Working / To Improve */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="glass-card p-6">
               <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-emerald-400">What's Working</h3>
@@ -278,7 +285,6 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
             </div>
           </div>
 
-          {/* Headlines */}
           <div className="glass-card p-6">
             <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">Generated Headlines</h3>
             {result.headlines?.map((h: string, i: number) => (
@@ -286,15 +292,17 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
             ))}
           </div>
 
-          {/* About */}
           {result.aboutSection && (
             <div className="glass-card p-6">
               <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">Optimised About Section</h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{result.aboutSection}</p>
+              <div className="text-sm text-muted-foreground space-y-4">
+                {result.aboutSection.split(/\n\n+/).map((para: string, i: number) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Positioning */}
           {result.positioningAngles && (
             <div className="glass-card p-6">
               <h3 className="font-semibold mb-3 text-sm uppercase tracking-wider text-muted-foreground">Positioning Angles</h3>
@@ -315,7 +323,12 @@ Return ONLY a valid JSON object (no markdown, no code blocks) with:
       )}
 
       {result && (
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex items-center justify-between">
+          {onBack ? (
+            <Button variant="ghost" onClick={onBack} className="text-muted-foreground">
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+          ) : <div />}
           <Button onClick={handleNext} className="accent-bg hover:opacity-90 h-12 px-8 font-semibold">
             Next Step →
           </Button>
