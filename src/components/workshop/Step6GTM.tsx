@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { InfoTooltip } from "./InfoTooltip";
@@ -6,7 +6,7 @@ import { callGemini } from "@/lib/workshop-store";
 import { sanitizeAIOutput } from "@/lib/sanitize";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Star, Calendar, Users, Presentation } from "lucide-react";
+import { ArrowLeft, Star, Calendar, Users, Presentation, RefreshCw, Zap, AlertTriangle } from "lucide-react";
 
 interface Step6Props {
   data: any;
