@@ -7,6 +7,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 import { InfoTooltip } from "./InfoTooltip";
 import { callGemini } from "@/lib/workshop-store";
 import { sanitizeAIOutput } from "@/lib/sanitize";
+import { NO_JARGON_RULE } from "@/lib/prompt-rules";
 import { motion } from "framer-motion";
 import { ArrowLeft, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
