@@ -2,8 +2,8 @@ import { Linkedin, Instagram, Calendar, BookOpen } from "lucide-react";
 
 const links = [
   { icon: Linkedin, label: "TJ's LinkedIn", href: "https://www.linkedin.com/in/tejasjhaveri" },
-  { icon: Instagram, label: "Instagram", href: "https://www.instagram.com/tejas_jhaveri" },
-  { icon: Calendar, label: "Book a Call", href: "https://calendly.com/founder-myntmore/30min" },
+  { icon: Instagram, label: "TJ's Instagram", href: "https://www.instagram.com/tejas_jhaveri" },
+  { icon: Calendar, label: "Book a Call with TJ", href: "https://calendly.com/founder-myntmore/30min" },
   { icon: BookOpen, label: "Myntmore", href: "https://www.notion.so/myntmorejobboard/Myntmore-Services-a78d1e0504524ff7a8b2c46ee61a42ac" },
 ];
 
