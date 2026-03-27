@@ -156,22 +156,14 @@ export async function generatePDF(sessionData: any) {
   const maxW = w - PAGE_MARGIN * 2;
   const userName = sessionData?.user_name || "Attendee";
 
-  // Load logo
-  let logoLoaded = false;
-  try {
-    const img = new Image();
-    img.src = myntmoreLogo;
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject();
-      setTimeout(reject, 3000);
-    });
-    const logoW = 30;
-    const logoH = (img.height / img.width) * logoW;
-    doc.addImage(img, "PNG", (w - logoW) / 2, 40, logoW, logoH);
-    logoLoaded = true;
-  } catch {
-    // Skip logo
+  // Load logo for all pages
+  const logoLoaded = await loadLogo();
+
+  // Cover page - centered large logo
+  if (cachedLogoImg) {
+    const logoW = 50;
+    const logoH = cachedLogoRatio * logoW;
+    doc.addImage(cachedLogoImg, "PNG", (w - logoW) / 2, 35, logoW, logoH);
   }
 
   // Cover page
