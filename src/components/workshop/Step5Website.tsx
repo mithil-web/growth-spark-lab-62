@@ -373,8 +373,8 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
                       <p className="text-sm font-semibold text-foreground">{p.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(p.prompt)} className="shrink-0 text-muted-foreground hover:text-primary">
-                      <Copy className="w-3 h-3" />
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(p.prompt, i)} className="shrink-0 text-muted-foreground hover:text-primary">
+                      {copiedIndex === i ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                     </Button>
                   </div>
                 </div>
