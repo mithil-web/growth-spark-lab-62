@@ -9,7 +9,7 @@ import { sanitizeAIText } from "@/lib/sanitize";
 import { NO_JARGON_RULE, PERSONALISATION_RULE } from "@/lib/prompt-rules";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, ExternalLink, Upload, ArrowLeft } from "lucide-react";
+import { Copy, Check, ExternalLink, Upload, ArrowLeft } from "lucide-react";
 import { MYNTMORE_NOTION_LINK } from "@/lib/constants";
 import {
   Accordion,
@@ -237,9 +237,30 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", duration: 2000 });
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const copyToClipboard = async (text: string, index?: number) => {
+    if (!text) {
+      console.error("Nothing to copy");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    toast({ title: "✓ Copied to clipboard", duration: 2000 });
+    if (index !== undefined) {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1500);
+    }
   };
 
   return (
@@ -316,8 +337,9 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Generated Prompt</h3>
-              <Button variant="ghost" size="sm" onClick={() => copyToClipboard(generatedPrompt)} className="text-muted-foreground hover:text-primary">
-                <Copy className="w-4 h-4 mr-1" /> Copy
+              <Button variant="ghost" size="sm" onClick={() => copyToClipboard(generatedPrompt, -1)} className="text-muted-foreground hover:text-primary">
+                {copiedIndex === -1 ? <Check className="w-4 h-4 mr-1 text-emerald-400" /> : <Copy className="w-4 h-4 mr-1" />}
+                {copiedIndex === -1 ? "Copied!" : "Copy"}
               </Button>
             </div>
             <pre className="text-xs text-muted-foreground bg-secondary p-4 rounded-md overflow-auto max-h-80 whitespace-pre-wrap">{generatedPrompt}</pre>
@@ -351,8 +373,8 @@ Output a detailed, ready-to-paste prompt. Do NOT return JSON. Return plain text.
                       <p className="text-sm font-semibold text-foreground">{p.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(p.prompt)} className="shrink-0 text-muted-foreground hover:text-primary">
-                      <Copy className="w-3 h-3" />
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(p.prompt, i)} className="shrink-0 text-muted-foreground hover:text-primary">
+                      {copiedIndex === i ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                     </Button>
                   </div>
                 </div>
