@@ -232,6 +232,16 @@ Return ONLY a valid JSON array of exactly 3 objects (no markdown, no code blocks
                   onOtherChange={v => updateIcp(idx, "industryOther", v)}
                   maxItems={3}
                 />
+                <MultiSelect
+                  label="Target Geography"
+                  options={ICP_GEOGRAPHIES}
+                  selected={icps[idx].geography}
+                  onChange={v => updateIcp(idx, "geography", v)}
+                  hasOther
+                  otherValue={icps[idx].geographyOther}
+                  onOtherChange={v => updateIcp(idx, "geographyOther", v)}
+                  searchable={false}
+                />
               </div>
             </CollapsibleContent>
           </Collapsible>
