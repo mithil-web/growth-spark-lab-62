@@ -166,7 +166,7 @@ export function Step5Website({ data, icpData, valuePropData, profileData, onSave
     const vps = valuePropData?.result || [];
     const offer = profileData?.coreOffer || icpData?.offer || "";
     const icpSummary = icps.map((icp: any, i: number) =>
-      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).slice(0, 3).join(", ")}`
+      `ICP ${i + 1}: ${icp.name}. Pain Points: ${(icp.painPoints || []).slice(0, 3).join(", ")}. Geography: ${icp.geographyContext || "Not specified"}`
     ).join("\n");
     const topVP = vps[0] ? `${vps[0].corePromise || vps[0].desiredOutcome}` : offer;
 
