@@ -24,12 +24,19 @@ const ROLES = [
 
 const SIZES = ["1–10", "10–50", "50–200", "200–500", "500–1000", "1000+"];
 
+const ICP_GEOGRAPHIES = [
+  "India", "USA", "UK", "Europe", "Middle East",
+  "Southeast Asia", "Australia", "Global", "Other",
+];
+
 interface IcpInput {
   roles: string[];
   sizes: string[];
   industries: string[];
   industryOther: string;
   roleOther: string;
+  geography: string[];
+  geographyOther: string;
 }
 
 interface Step3Props {
