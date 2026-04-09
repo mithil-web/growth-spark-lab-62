@@ -110,8 +110,10 @@ ${NO_JARGON_RULE}
 
 ${PERSONALISATION_RULE}
 
+${GEO_AWARENESS_RULE}
+
 Core Offer: ${offer}
-${Array.from({ length: 3 }, (_, i) => `ICP ${i + 1} Inputs: Roles: ${getRoles(icps[i]).join(", ")}, Company Sizes: ${icps[i].sizes.filter(x => x !== "Other").join(", ")}, Industries: ${getIndustries(icps[i]).join(", ")}`).join("\n")}
+${Array.from({ length: 3 }, (_, i) => `ICP ${i + 1} Inputs: Roles: ${getRoles(icps[i]).join(", ")}, Company Sizes: ${icps[i].sizes.filter(x => x !== "Other").join(", ")}, Industries: ${getIndustries(icps[i]).join(", ")}, Target Geography: ${getGeographies(icps[i]).join(", ") || "Not specified"}`).join("\n")}
 
 For EACH ICP generate:
 1. ICP Name: Must be simple, immediately understandable, and professional. Use plain language. Good examples: "The Growth-Focused Founder", "The Busy Sales Director", "The Scaling Agency Owner". Bad examples: "The GTM Orchestrator", "Revenue-Driven Enterprise Executive". The name should describe who the person is in everyday language.
