@@ -22,27 +22,7 @@ const steps = [
 export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#ffe4d6] via-[#fbf1eb] to-[#e6dfff] text-black font-sans selection:bg-[#FFC947]/30">
-      {/* Top nav */}
-      <header className="absolute top-0 left-0 right-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-          <img src="/myntmore-logo.png" alt="MyntMore" className="h-8" onError={(e) => (e.currentTarget.style.display = "none")} />
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-black/70">
-            <a href="#services" className="hover:text-black transition">Services</a>
-            <a href="#case-studies" className="hover:text-black transition">Case Studies</a>
-            <a href="#resources" className="hover:text-black transition">Resources</a>
-            <a href="#about" className="hover:text-black transition">About</a>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:inline-block text-sm font-medium text-black/70">Contact</span>
-            <Link
-              to="/workshop"
-              className="inline-flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-full bg-white border border-black/5 shadow-sm text-black hover:shadow-md transition"
-            >
-              Book a Call <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </header>
+
 
       {/* Hero */}
       <section className="relative max-w-5xl mx-auto px-6 pt-40 pb-32 text-center">
