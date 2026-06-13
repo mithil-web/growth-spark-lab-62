@@ -14,7 +14,7 @@ const outcomes = [
 
 const steps = [
   { n: "01", title: "Tell us about your business", desc: "Share what you do, who you serve, your revenue stage, and where you want to grow." },
-  { n: "02", title: "Optimize your LinkedIn", desc: "We rewrite your headline and About section to attract your ideal clients — not just connections." },
+  { n: "02", title: "Optimize your LinkedIn", desc: "We rewrite your headline and About section to attract your ideal clients, not just connections." },
   { n: "03", title: "Define your ICP & Value Prop", desc: "Get razor-sharp on your customer profile and craft messaging that actually resonates." },
   { n: "04", title: "Build your GTM & Lead Magnets", desc: "Map out your go-to-market approach with lead magnet ideas you can ship immediately." },
   { n: "05", title: "Generate your website & outreach", desc: "Walk away with a complete website prompt and a personalized outreach playbook for each ICP." },
