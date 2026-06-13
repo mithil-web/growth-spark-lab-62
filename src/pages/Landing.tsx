@@ -8,7 +8,7 @@ const outcomes = [
   { icon: Target, title: "Crystal-Clear ICP", desc: "Know exactly who you're selling to, what keeps them up at night, and what triggers them to buy." },
   { icon: TrendingUp, title: "Your Value Proposition", desc: "A sharp, tailored pitch for each customer segment. No more generic messaging that gets ignored." },
   { icon: Rocket, title: "GTM Strategy + Lead Magnets", desc: "A go-to-market plan with lead magnet ideas you can actually ship this week to start building pipeline." },
-  { icon: Globe, title: "Website Copy, Done", desc: "A complete, AI-generated website prompt built live during the workshop — ready to hand off and publish." },
+  { icon: Globe, title: "Website Copy, Done", desc: "A complete, AI-generated website prompt built live during the workshop, ready to hand off and publish." },
   { icon: Send, title: "Outreach Playbook", desc: "Personalized outreach sequences for each ICP, so you can start real conversations that lead to revenue." },
 ];
 
